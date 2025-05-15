@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 class Calcul_attribut (object):
     def __init__(self, mnt, name):
         self.mnt = mnt
@@ -66,10 +67,62 @@ class Calcul_attribut (object):
         plt.title(f'Exposition de {self.name}')
         plt.colorbar(label='Exposition [°]')
         plt.show()
+    def bpi(self):
 
+        n_lignes = len(self.mnt)
+        n_colonnes = len(self.mnt[0])
+        print('Nombre de lignes du fichier :', n_lignes)
+        print('Nombre de colonnes du fichier :', n_colonnes)
+        def bpi_carre(self):
+            bpi = np.zeros((n_lignes, n_colonnes))
+            for i in range(1, n_lignes - 1):
+                for j in range(1, n_colonnes - 1):
+                    voisins = [
+                        self.mnt[i-1][j-1], self.mnt[i-1][j], self.mnt[i-1][j+1],
+                        self.mnt[i][j-1],                   self.mnt[i][j+1],
+                        self.mnt[i+1][j-1], self.mnt[i+1][j], self.mnt[i+1][j+1]]
+                    bpi[i][j] = self.mnt[i][j] - (sum(voisins) / 8)
+
+            plt.figure()
+            plt.imshow(bpi, origin='lower', cmap='magma_r')
+            plt.title(f'BPI_carre de {self.name}')
+            plt.colorbar(label='BPI')
+
+            print('BPI calculé :')
+            print(bpi)
+
+        def bpi_cercle(self): #méthode bien plus précise (plus de voisins) 
+
+            n_lignes = len(self.mnt)
+            n_colonnes = len(self.mnt[0])
+            
+            bpi = np.zeros((n_lignes, n_colonnes))
+
+            for i in range(2, n_lignes - 2):
+                for j in range(2, n_colonnes - 2):
+                    voisins = [
+                        self.mnt[i-2][j-2], self.mnt[i-2][j], self.mnt[i-2][j+2],
+                        self.mnt[i-1][j-2], self.mnt[i-1][j-1], self.mnt[i-1][j], self.mnt[i-1][j+1], self.mnt[i-1][j+2],
+                        self.mnt[i][j-2], self.mnt[i][j-1], self.mnt[i][j+1], self.mnt[i][j+2],
+                        self.mnt[i+1][j-2], self.mnt[i+1][j-1], self.mnt[i+1][j], self.mnt[i+1][j+1], self.mnt[i+1][j+2],
+                        self.mnt[i+2][j-2], self.mnt[i+2][j], self.mnt[i+2][j+2]
+                    ]
+                    bpi[i][j] = self.mnt[i][j] - (sum(voisins) / len(voisins))  
+
+            plt.figure()
+            plt.imshow(bpi, origin='lower', cmap='magma_r')
+            plt.title(f'BPI cercle de {self.name}')
+            plt.colorbar(label='BPI')
+            plt.show()
+        bpi_carre(self)
+        bpi_cercle(self)
+        plt.show()
+
+        
 
 if __name__ == '__main__':
-    fichier = "plan.txt"
+    fichier = "sin_card.txt"
     map = Calcul_attribut.from_file("MNT/" + fichier)
     map.affiche()
     map.pente_TPP()
+    map.bpi()
