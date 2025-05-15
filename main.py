@@ -1,10 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
-from matplotlib.colors import Normalize
-from matplotlib.colors import LightSource
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 class Calcul_attribut (object):
     def __init__(self, mnt, name):
@@ -129,60 +124,60 @@ class Calcul_attribut (object):
         plt.title(f'Exposition de {self.name}')
         plt.colorbar(label='Exposition [°]')
         plt.show()
+        
+    def bpi(self):
+        def bpi_carre(self):
+            n_lignes = len(self.mnt)
+            n_colonnes = len(self.mnt[0])
 
-    def deriv_mnt(self):
-        fy, fx = np.gradient(self.mnt, self.pas, self.pas)
-        return fx, fy
+            print('Nombre de lignes du fichier :', n_lignes)
+            print('Nombre de colonnes du fichier :', n_colonnes)
 
-    def affichage_pente_theoriques_et_reelles(self):
-        fx, fy = self.deriv_mnt()
-        pente_reel = self.pente(fx, fy)
-        fx, fy = self.TPP()
-        pente_tpp = self.pente(fx, fy)
-        fx, fy = self.FCN()
-        pente_fcn = self.pente(fx, fy)
-        modelisation_Evans = self.Evans()
+            bpi = np.zeros((n_lignes, n_colonnes))
 
-        # Normaliser les palettes entre 0° et pmax
-        pmax = 50
-        normalize = Normalize(0, pmax)
-        cmap = cm.gist_earth
+            for i in range(1, n_lignes - 1):
+                for j in range(1, n_colonnes - 1):
+                    voisins = [
+                        self.mnt[i-1][j-1], self.mnt[i-1][j], self.mnt[i-1][j+1],
+                        self.mnt[i][j-1],                   self.mnt[i][j+1],
+                        self.mnt[i+1][j-1], self.mnt[i+1][j], self.mnt[i+1][j+1]
+                    ]
+                    bpi[i][j] = self.mnt[i][j] - (sum(voisins) / 8)
 
-        fig, ax = plt.subplots(1, 4, figsize=(12, 5))
-        im = ax[0].imshow(pente_tpp, origin='lower', cmap=cmap, norm=normalize)
-        ax[0].set_title('TPP')
-        divider = make_axes_locatable(ax[0])
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Pente[°]', cax=cax)
+            plt.figure()
+            plt.imshow(bpi, origin='lower', cmap='magma_r')
+            plt.title(f'BPI de {self.name}')
+            plt.colorbar(label='BPI')
+        def bpi_cercle(self):
+            n_lignes = len(self.mnt)
+            n_colonnes = len(self.mnt[0])
+            
+            bpi = np.zeros((n_lignes, n_colonnes))
 
-        im = ax[1].imshow(pente_fcn, origin='lower', cmap=cmap, norm=normalize)
-        ax[1].set_title('FCN')
-        divider = make_axes_locatable(ax[1])
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Pente[°]', cax=cax)
+            for i in range(2, n_lignes - 2):
+                for j in range(2, n_colonnes - 2):
+                    voisins = [
+                        self.mnt[i-2][j-2], self.mnt[i-2][j], self.mnt[i-2][j+2],
+                        self.mnt[i-1][j-2], self.mnt[i-1][j-1], self.mnt[i-1][j], self.mnt[i-1][j+1], self.mnt[i-1][j+2],
+                        self.mnt[i][j-2], self.mnt[i][j-1], self.mnt[i][j+1], self.mnt[i][j+2],
+                        self.mnt[i+1][j-2], self.mnt[i+1][j-1], self.mnt[i+1][j], self.mnt[i+1][j+1], self.mnt[i+1][j+2],
+                        self.mnt[i+2][j-2], self.mnt[i+2][j], self.mnt[i+2][j+2]
+                    ]
+                    bpi[i][j] = self.mnt[i][j] - (sum(voisins) / len(voisins))  # Moyenne des 20 voisins
 
-        im = ax[2].imshow(pente_fcn, origin='lower', cmap=cmap, norm=normalize)
-        ax[2].set_title('Evans')
-        divider = make_axes_locatable(ax[2])
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Pente[°]', cax=cax)
-
-        im = ax[3].imshow(pente_reel, origin='lower', cmap=cmap, norm=normalize)
-        ax[3].set_title('Réel')
-        divider = make_axes_locatable(ax[3])
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Pente[°]', cax=cax)
-
-        for a in ax:
-            a.set_xlabel("X")
-            a.set_ylabel("Y")
-
-        plt.tight_layout()
+            plt.figure()
+            plt.imshow(bpi, origin='lower', cmap='magma_r')
+            plt.title(f'BPI cercle de {self.name}')
+            plt.colorbar(label='BPI')
+        bpi_carre()
+        bpi_cercle()
         plt.show()
 
 
+
 if __name__ == '__main__':
-    fichier = "double_sin.txt"
+    fichier = "plan.txt"
     map = Calcul_attribut.from_file("MNT/" + fichier)
-    map.affiche_3D() # affiche le MNT
-    map.affichage_pente_theoriques_et_reelles()
+    map.affiche()
+    #map.pente_TPP()
+    map.bpi()
