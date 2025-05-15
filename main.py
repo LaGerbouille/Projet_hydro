@@ -75,8 +75,8 @@ class Calcul_attribut (object):
         plt.show()
 
     def TPP(self):
-        fx = (self.mnt[1:-1, 2:] - self.mnt[1:-1, 1:-1]) / self.pas
-        fy = (self.mnt[:-2, 1:-1] - self.mnt[1:-1, 1:-1]) / self.pas
+        fx = (self.mnt[1:,1:] - self.mnt[1:,:-1]) / self.pas
+        fy = (self.mnt[:-1,:-1] - self.mnt[1:,:-1]) / self.pas
 
         return fx, fy
 
