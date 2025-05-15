@@ -124,10 +124,60 @@ class Calcul_attribut (object):
         plt.title(f'Exposition de {self.name}')
         plt.colorbar(label='Exposition [°]')
         plt.show()
+        
+    def bpi(self):
+        def bpi_carre(self):
+            n_lignes = len(self.mnt)
+            n_colonnes = len(self.mnt[0])
+
+            print('Nombre de lignes du fichier :', n_lignes)
+            print('Nombre de colonnes du fichier :', n_colonnes)
+
+            bpi = np.zeros((n_lignes, n_colonnes))
+
+            for i in range(1, n_lignes - 1):
+                for j in range(1, n_colonnes - 1):
+                    voisins = [
+                        self.mnt[i-1][j-1], self.mnt[i-1][j], self.mnt[i-1][j+1],
+                        self.mnt[i][j-1],                   self.mnt[i][j+1],
+                        self.mnt[i+1][j-1], self.mnt[i+1][j], self.mnt[i+1][j+1]
+                    ]
+                    bpi[i][j] = self.mnt[i][j] - (sum(voisins) / 8)
+
+            plt.figure()
+            plt.imshow(bpi, origin='lower', cmap='magma_r')
+            plt.title(f'BPI de {self.name}')
+            plt.colorbar(label='BPI')
+        def bpi_cercle(self):
+            n_lignes = len(self.mnt)
+            n_colonnes = len(self.mnt[0])
+            
+            bpi = np.zeros((n_lignes, n_colonnes))
+
+            for i in range(2, n_lignes - 2):
+                for j in range(2, n_colonnes - 2):
+                    voisins = [
+                        self.mnt[i-2][j-2], self.mnt[i-2][j], self.mnt[i-2][j+2],
+                        self.mnt[i-1][j-2], self.mnt[i-1][j-1], self.mnt[i-1][j], self.mnt[i-1][j+1], self.mnt[i-1][j+2],
+                        self.mnt[i][j-2], self.mnt[i][j-1], self.mnt[i][j+1], self.mnt[i][j+2],
+                        self.mnt[i+1][j-2], self.mnt[i+1][j-1], self.mnt[i+1][j], self.mnt[i+1][j+1], self.mnt[i+1][j+2],
+                        self.mnt[i+2][j-2], self.mnt[i+2][j], self.mnt[i+2][j+2]
+                    ]
+                    bpi[i][j] = self.mnt[i][j] - (sum(voisins) / len(voisins))  # Moyenne des 20 voisins
+
+            plt.figure()
+            plt.imshow(bpi, origin='lower', cmap='magma_r')
+            plt.title(f'BPI cercle de {self.name}')
+            plt.colorbar(label='BPI')
+        bpi_carre()
+        bpi_cercle()
+        plt.show()
+
 
 
 if __name__ == '__main__':
     fichier = "plan.txt"
     map = Calcul_attribut.from_file("MNT/" + fichier)
     map.affiche()
-    map.pente_TPP()
+    #map.pente_TPP()
+    map.bpi()
