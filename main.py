@@ -22,11 +22,66 @@ class Calcul_attribut (object):
         data = np.loadtxt(chemin)
         return cls(data, chemin[4:-4])
 
-    # --------------------------------------------------------- PENTE --------------------------------------------------------------
+    # sert à afficher le graphe du MNT
+    def affiche(self):
+        # Dimensions des terrains artificiels
+        x = np.arange(0, self.mnt.shape[0])
+        y = np.arange(0, self.mnt.shape[0])
+        X, Y = np.meshgrid(x, y)
+
+        cmap = plt.cm.gist_earth
+        img = plt.contourf(X, Y, self.mnt, levels=100, cmap=cmap)
+        plt.contour(X, Y, self.mnt, levels=5, colors='black')
+        plt.title(self.name)
+        plt.colorbar(img, label='Altitude [m]')
+        plt.show()
+
+    def affiche_3D(self):
+        cmap = plt.cm.cubehelix
+
+        # Dimensions de l'image à afficher
+        x_mnt = np.arange(self.mnt.shape[1])
+        y_mnt = np.arange(self.mnt.shape[0])
+        X_MNT, Y_MNT = np.meshgrid(x_mnt, y_mnt)
+
+        # Normaliser les z pour définir la palette
+        norm = Normalize(vmin=np.nanmin(self.mnt), vmax=np.nanmax(self.mnt))
+        my_col = cmap(norm(self.mnt))
+        # Illumination pour le modèle
+        ls = LightSource(azdeg=-45, altdeg=35)
+        rgb = ls.shade(self.mnt, cmap=cmap, vert_exag=4, blend_mode='soft')
+
+        # Figure 3D
+        fig, axe = plt.subplots(figsize=(8, 8), subplot_kw={"projection": "3d"})
+        # Choix du point de vue
+        axe.view_init(elev=35., azim=15)
+        # Afficher la surface avec illumination
+        # Augmenter les valeurs rstride et cstride pour accélérer l'affichage
+        surf = axe.plot_surface(X_MNT, Y_MNT, self.mnt, facecolors=rgb, linewidth=0, antialiased=False, rstride=3, cstride=3)
+        m = cm.ScalarMappable(cmap=cmap, norm=norm)
+
+        plt.colorbar(m, ax=axe, shrink=.8)
+        plt.tight_layout()
+        plt.show()
+
+    def calcul_caracteristique_global(self):
+        self.prof_min = np.min(self.mnt)
+        self.prof_max = np.max(self.mnt)
+        self.prof_moy = np.mean(self.mnt)
+        self.ecart_type = np.std(self.mnt)
+
+        print(f'Profondeur :\n\t - min : {self.prof_min} \n\t - max : {self.prof_max} \n\t - moyenne : {self.prof_moy} \n\t - ecart type : {self.ecart_type}')
+
+        plt.figure()
+        plt.title(f'Histogramme de {self.name}')
+        plt.xlabel("Profondeur (m)")
+        plt.ylabel("Fréquence")
+        plt.hist(self.mnt.ravel(), bins=50, color='steelblue', edgecolor='black')
+        plt.show()
 
     def TPP(self):
-        fx = (self.mnt[1:-1, 2:] - self.mnt[1:-1, 1:-1]) / self.pas
-        fy = (self.mnt[:-2, 1:-1] - self.mnt[1:-1, 1:-1]) / self.pas
+        fx = (self.mnt[1:,1:] - self.mnt[1:,:-1]) / self.pas
+        fy = (self.mnt[:-1,:-1] - self.mnt[1:,:-1]) / self.pas
 
         return fx, fy
 
@@ -55,22 +110,12 @@ class Calcul_attribut (object):
         C = (z3+z7-z1-z9)/(4*self.pas**2)
         D = (z3+z6+z9-z1-z4-z7)/(6*self.pas**2)
         E = (z1+z2+z3-z7-z8-z9)/(6*self.pas**2)
+        F = (5*z5+2*(z2+z4+z6+z8)-(z1+z3+z7+z9))/9
 
-        # f(x, y) = A*x**2 + B*y**2 * C*x*y + D*x + E*y + F
-
-        fx = D
-        fy = E
-
-        return fx, fy
+        return A*x**2 + B*y**2 * C*x*y + D*x + E*y + F
 
     def pente(self, fx, fy):
         return np.arctan(np.sqrt(fx ** 2 + fy ** 2)) * 180 / np.pi
-
-    def deriv_mnt(self):
-        fy, fx = np.gradient(self.mnt, self.pas, self.pas)
-        return fx, fy
-
-    # -------------------------------------------------------- EXPOSITION --------------------------------------------------------------
 
     def exposition(self, fx, fy):
         return np.arctan2(-fx, -fy) * 180 / np.pi
@@ -85,122 +130,57 @@ class Calcul_attribut (object):
         plt.colorbar(label='Exposition [°]')
         plt.show()
 
-    # ------------------------------------------------------- AFFICHAGE -----------------------------------------------------
+    def bpi(self):
+        def bpi_carre(self):
+            n_lignes = len(self.mnt)
+            n_colonnes = len(self.mnt[0])
 
-    # sert à afficher le graphe 2D du MNT
-    def affiche(self):
-        # Dimensions des terrains artificiels
-        x = np.arange(0, self.mnt.shape[0])
-        y = np.arange(0, self.mnt.shape[0])
-        X, Y = np.meshgrid(x, y)
+            print('Nombre de lignes du fichier :', n_lignes)
+            print('Nombre de colonnes du fichier :', n_colonnes)
 
-        cmap = plt.cm.gist_earth
-        img = plt.contourf(X, Y, self.mnt, levels=100, cmap=cmap)
-        plt.contour(X, Y, self.mnt, levels=5, colors='black')
-        plt.title(self.name)
-        plt.colorbar(img, label='Altitude [m]')
-        plt.show()
+            bpi = np.zeros((n_lignes, n_colonnes))
 
-    # affiche le MNT en 3D
-    def affiche_3D(self):
-        cmap = plt.cm.cubehelix
+            for i in range(1, n_lignes - 1):
+                for j in range(1, n_colonnes - 1):
+                    voisins = [
+                        self.mnt[i-1][j-1], self.mnt[i-1][j], self.mnt[i-1][j+1],
+                        self.mnt[i][j-1],                   self.mnt[i][j+1],
+                        self.mnt[i+1][j-1], self.mnt[i+1][j], self.mnt[i+1][j+1]
+                    ]
+                    bpi[i][j] = self.mnt[i][j] - (sum(voisins) / 8)
 
-        # Dimensions de l'image à afficher
-        x_mnt = np.arange(self.mnt.shape[1])
-        y_mnt = np.arange(self.mnt.shape[0])
-        X_MNT, Y_MNT = np.meshgrid(x_mnt, y_mnt)
+            plt.figure()
+            plt.imshow(bpi, origin='lower', cmap='magma_r')
+            plt.title(f'BPI de {self.name}')
+            plt.colorbar(label='BPI')
+        def bpi_cercle(self):
+            n_lignes = len(self.mnt)
+            n_colonnes = len(self.mnt[0])
 
-        # Normaliser les z pour définir la palette
-        norm = Normalize(vmin=np.nanmin(self.mnt), vmax=np.nanmax(self.mnt))
-        my_col = cmap(norm(self.mnt))
-        # Illumination pour le modèle
-        ls = LightSource(azdeg=-45, altdeg=35)
-        rgb = ls.shade(self.mnt, cmap=cmap, vert_exag=4, blend_mode='soft')
+            bpi = np.zeros((n_lignes, n_colonnes))
 
-        # Figure 3D
-        fig, axe = plt.subplots(figsize=(8, 8), subplot_kw={"projection": "3d"})
-        # Choix du point de vue
-        axe.view_init(elev=35., azim=15)
-        # Afficher la surface avec illumination
-        # Augmenter les valeurs rstride et cstride pour accélérer l'affichage
-        surf = axe.plot_surface(X_MNT, Y_MNT, self.mnt, facecolors=rgb, linewidth=0, antialiased=False, rstride=3,
-                                cstride=3)
-        m = cm.ScalarMappable(cmap=cmap, norm=norm)
+            for i in range(2, n_lignes - 2):
+                for j in range(2, n_colonnes - 2):
+                    voisins = [
+                        self.mnt[i-2][j-1], self.mnt[i-2][j], self.mnt[i-2][j+2],
+                        self.mnt[i-1][j-2], self.mnt[i-1][j-1], self.mnt[i-1][j], self.mnt[i-1][j+1], self.mnt[i-1][j+2],
+                        self.mnt[i][j-2], self.mnt[i][j-1], self.mnt[i][j+1], self.mnt[i][j+2],
+                        self.mnt[i+1][j-2], self.mnt[i+1][j-1], self.mnt[i+1][j], self.mnt[i+1][j+1], self.mnt[i+1][j+2],
+                        self.mnt[i+2][j-2], self.mnt[i+2][j], self.mnt[i+2][j+1]
+                    ]
+                    bpi[i][j] = self.mnt[i][j] - (sum(voisins) / len(voisins))  # Moyenne des 20 voisins
 
-        plt.title(self.name)
-        plt.colorbar(m, ax=axe, shrink=.8)
-        plt.tight_layout()
-        plt.show()
-
-    def affiche_caracteristique_global(self):
-        self.prof_min = np.min(self.mnt)
-        self.prof_max = np.max(self.mnt)
-        self.prof_moy = np.mean(self.mnt)
-        self.ecart_type = np.std(self.mnt)
-
-        print(
-            f'Profondeur :\n\t - min : {self.prof_min} \n\t - max : {self.prof_max} \n\t - moyenne : {self.prof_moy} \n\t - ecart type : {self.ecart_type}')
-
-        plt.figure()
-        plt.title(f'Histogramme de {self.name}')
-        plt.xlabel("Profondeur (m)")
-        plt.ylabel("Fréquence")
-        plt.hist(self.mnt.ravel(), bins=50, color='steelblue', edgecolor='black')
-        plt.show()
-
-    def affichage_pente_theoriques_et_reelles(self):
-        fx, fy = self.deriv_mnt()
-        pente_reel = self.pente(fx, fy)
-        fx, fy = self.TPP()
-        pente_tpp = self.pente(fx, fy)
-        fx, fy = self.FCN()
-        pente_fcn = self.pente(fx, fy)
-        fx, fy = self.Evans()
-        pente_evans = self.pente(fx, fy)
-
-        # Normaliser les palettes entre 0° et pmax
-        pmax = 50
-        normalize = Normalize(0, pmax)
-        cmap = 'cividis_r'
-
-        fig, ax = plt.subplots(2, 2, figsize=(10, 8))
-        ax = ax.flatten()
-
-        im = ax[0].imshow(pente_tpp, origin='lower', cmap=cmap, norm=normalize)
-        ax[0].set_title('TPP')
-        divider = make_axes_locatable(ax[0])
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Pente[°]', cax=cax)
-
-        im = ax[1].imshow(pente_fcn, origin='lower', cmap=cmap, norm=normalize)
-        ax[1].set_title('FCN')
-        divider = make_axes_locatable(ax[1])
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Pente[°]', cax=cax)
-
-        im = ax[2].imshow(pente_evans, origin='lower', cmap=cmap, norm=normalize)
-        ax[2].set_title('Evans')
-        divider = make_axes_locatable(ax[2])
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Pente[°]', cax=cax)
-
-        im = ax[3].imshow(pente_reel, origin='lower', cmap=cmap, norm=normalize)
-        ax[3].set_title('Réel')
-        divider = make_axes_locatable(ax[3])
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Pente[°]', cax=cax)
-
-        for a in ax:
-            a.set_xlabel("X")
-            a.set_ylabel("Y")
-
-        plt.suptitle(self.name)
-        plt.tight_layout()
+            plt.figure()
+            plt.imshow(bpi, origin='lower', cmap='magma_r')
+            plt.title(f'BPI cercle de {self.name}')
+            plt.colorbar(label='BPI')
+        bpi_carre(self)
+        bpi_cercle(self)
         plt.show()
 
 
 if __name__ == '__main__':
-    fichier = "sin_card.txt"
+    fichier = "double_sin.txt"
     map = Calcul_attribut.from_file("MNT/" + fichier)
-    map.affiche_3D()
-    map.affichage_pente_theoriques_et_reelles()
+    map.affiche()
+    map.bpi()
