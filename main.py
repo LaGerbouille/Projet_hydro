@@ -113,26 +113,19 @@ class Calcul_attribut (object):
 
         bpi = np.zeros((n_lignes, n_colonnes))
 
-            for i in range(2, n_lignes - 2):
-                for j in range(2, n_colonnes - 2):
-                    voisins = [
-                        self.mnt[i-2][j-1], self.mnt[i-2][j], self.mnt[i-2][j+2],
-                        self.mnt[i-1][j-2], self.mnt[i-1][j-1], self.mnt[i-1][j], self.mnt[i-1][j+1], self.mnt[i-1][j+2],
-                        self.mnt[i][j-2], self.mnt[i][j-1], self.mnt[i][j+1], self.mnt[i][j+2],
-                        self.mnt[i+1][j-2], self.mnt[i+1][j-1], self.mnt[i+1][j], self.mnt[i+1][j+1], self.mnt[i+1][j+2],
-                        self.mnt[i+2][j-2], self.mnt[i+2][j], self.mnt[i+2][j+1]
-                    ]
-                    bpi[i][j] = self.mnt[i][j] - (sum(voisins) / len(voisins))  # Moyenne des 20 voisins
+        for i in range(2, n_lignes - 2):
+            for j in range(2, n_colonnes - 2):
+                voisins = [
+                    self.mnt[i-2][j-1], self.mnt[i-2][j], self.mnt[i-2][j+2],
+                    self.mnt[i-1][j-2], self.mnt[i-1][j-1], self.mnt[i-1][j], self.mnt[i-1][j+1], self.mnt[i-1][j+2],
+                    self.mnt[i][j-2], self.mnt[i][j-1], self.mnt[i][j+1], self.mnt[i][j+2],
+                    self.mnt[i+1][j-2], self.mnt[i+1][j-1], self.mnt[i+1][j], self.mnt[i+1][j+1], self.mnt[i+1][j+2],
+                    self.mnt[i+2][j-2], self.mnt[i+2][j], self.mnt[i+2][j+1]
+                ]
+                bpi[i][j] = self.mnt[i][j] - (sum(voisins) / len(voisins))  # Moyenne des 20 voisins
+        return bpi
 
-            plt.figure()
-            plt.imshow(bpi, origin='lower', cmap='magma_r')
-            plt.title(f'BPI cercle de {self.name}')
-            plt.colorbar(label='BPI')
-        bpi_carre(self)
-        bpi_cercle(self)
-        plt.show()
-
-    # -------------------------------------------------------- EXPOSITION --------------------------------------------------------------
+    # -------------------------------------------------------- COURBURE --------------------------------------------------------------
 
     def courbures(self):
         if self.pente_TPP() == 0:
