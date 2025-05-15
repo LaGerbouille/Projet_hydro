@@ -70,6 +70,21 @@ class Calcul_attribut (object):
         fy, fx = np.gradient(self.mnt, self.pas, self.pas)
         return fx, fy
 
+    # -------------------------------------------------------- EXPOSITION --------------------------------------------------------------
+
+    def exposition(self, fx, fy):
+        return np.arctan2(-fx, -fy) * 180 / np.pi
+
+    def graphe_exposition_TPP(self):
+        fx, fy = self.TPP()
+        exposition = self.exposition(fx, fy)
+
+        plt.figure()
+        plt.imshow(exposition, origin='lower', cmap='magma_r')
+        plt.title(f'Exposition de {self.name}')
+        plt.colorbar(label='Exposition [°]')
+        plt.show()
+
     # ------------------------------------------------------ BPI -------------------------------------------------------
 
     
@@ -98,31 +113,66 @@ class Calcul_attribut (object):
 
         bpi = np.zeros((n_lignes, n_colonnes))
 
-        for i in range(2, n_lignes - 2):
-            for j in range(2, n_colonnes - 2):
-                voisins = [
-                    self.mnt[i-2][j-1], self.mnt[i-2][j], self.mnt[i-2][j+2],
-                    self.mnt[i-1][j-2], self.mnt[i-1][j-1], self.mnt[i-1][j], self.mnt[i-1][j+1], self.mnt[i-1][j+2],
-                    self.mnt[i][j-2], self.mnt[i][j-1], self.mnt[i][j+1], self.mnt[i][j+2],
-                    self.mnt[i+1][j-2], self.mnt[i+1][j-1], self.mnt[i+1][j], self.mnt[i+1][j+1], self.mnt[i+1][j+2],
-                    self.mnt[i+2][j-2], self.mnt[i+2][j], self.mnt[i+2][j+1]
-                ]
-                bpi[i][j] = self.mnt[i][j] - (sum(voisins) / len(voisins))  # Moyenne des 20 voisins
-        return bpi
+            for i in range(2, n_lignes - 2):
+                for j in range(2, n_colonnes - 2):
+                    voisins = [
+                        self.mnt[i-2][j-1], self.mnt[i-2][j], self.mnt[i-2][j+2],
+                        self.mnt[i-1][j-2], self.mnt[i-1][j-1], self.mnt[i-1][j], self.mnt[i-1][j+1], self.mnt[i-1][j+2],
+                        self.mnt[i][j-2], self.mnt[i][j-1], self.mnt[i][j+1], self.mnt[i][j+2],
+                        self.mnt[i+1][j-2], self.mnt[i+1][j-1], self.mnt[i+1][j], self.mnt[i+1][j+1], self.mnt[i+1][j+2],
+                        self.mnt[i+2][j-2], self.mnt[i+2][j], self.mnt[i+2][j+1]
+                    ]
+                    bpi[i][j] = self.mnt[i][j] - (sum(voisins) / len(voisins))  # Moyenne des 20 voisins
+
+            plt.figure()
+            plt.imshow(bpi, origin='lower', cmap='magma_r')
+            plt.title(f'BPI cercle de {self.name}')
+            plt.colorbar(label='BPI')
+        bpi_carre(self)
+        bpi_cercle(self)
+        plt.show()
+
     # -------------------------------------------------------- EXPOSITION --------------------------------------------------------------
 
-    def exposition(self, fx, fy):
-        return np.arctan2(-fx, -fy) * 180 / np.pi
+    def courbures(self):
+        if self.pente_TPP() == 0:
+            kv = np.nan
+            kh = np.nan
+        else:
+            fx = (self.mnt[1:-1, 2:] - self.mnt[1:-1, 1:-1]) / self.pas
+            fy = (self.mnt[:-2, 1:-1] - self.mnt[1:-1, 1:-1]) / self.pas
+            fxx = (self.mnt[1:-1, 2:] - 2 * self.mnt[1:-1, 1:-1] + self.mnt[1:-1, :-2]) / self.pas ** 2
+            fyy = (self.mnt[2:, 1:-1] - 2 * self.mnt[1:-1, 1:-1] + self.mnt[:-2, 1:-1]) / self.pas ** 2
+            fxy = (self.mnt[:-1, 1:] - self.mnt[:-1, :-1] - self.mnt[1:, 1:] + self.mnt[1:, :-1]) / (self.pas ** 2)
+            p = fx ** 2 + fy ** 2
+            q = p + 1
+            kv = -(fxx * fx ** 2 + 2 * fxy * fx * fy + fyy * fy ** 2) / (p * (q ** 3) ** (1 / 2))
+            kh = -(fxx * fy ** 2 - 2 * fxy * fx * fy + fyy * fx ** 2) / (p * q ** (1 / 2))
 
-    def graphe_exposition_TPP(self):
-        fx, fy = self.TPP()
-        exposition = self.exposition(fx, fy)
+        return kv, kh
 
-        plt.figure()
-        plt.imshow(exposition, origin='lower', cmap='magma_r')
-        plt.title(f'Exposition de {self.name}')
-        plt.colorbar(label='Exposition [°]')
-        plt.show()
+    def courbures_approxi(self):
+        z1 = self.mnt[:-2, :-2]
+        z2 = self.mnt[:-2, 1:-1]
+        z3 = self.mnt[:-2, 2:]
+        z4 = self.mnt[1:-1, :-2]
+        z5 = self.mnt[1:-1, 1:-1]
+        z6 = self.mnt[1:-1, 2:]
+        z7 = self.mnt[2:, :-2]
+        z8 = self.mnt[2:, 1:-1]
+        z9 = self.mnt[2:, 2:]
+
+        A = (z1 + z3 + z4 + z6 + z7 + z9) / (6 * self.pas ** 2) - (z2 + z5 + z8) / (3 * self.pas ** 2)
+        B = (z1 + z2 + z3 + z7 + z8 + z9) / (6 * self.pas ** 2) - (z4 + z5 + z6) / (3 * self.pas ** 2)
+        C = (z3 + z7 - z1 - z9) / (4 * self.pas ** 2)
+        kmin = -A - B - np.sqrt((A - B) ** 2 + C ** 2)
+        kmax = -A - B + np.sqrt((A - B) ** 2 + C ** 2)
+        kmean = (kmin + kmax) / 2
+
+        return kmean
+
+    # ------------------------------------------------------ SEGMENTATION -----------------------------------------------------
+
 
     # ------------------------------------------------------- AFFICHAGE -----------------------------------------------------
 
