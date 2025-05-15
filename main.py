@@ -92,6 +92,9 @@ class Calcul_attribut (object):
         return fx, fy
 
     def Evans(self):
+        x = np.arange(1, 100)
+        y = np.arange(1, 100)
+
         z1 = self.mnt[:-2, :-2]
         z2 = self.mnt[:-2, 1:-1]
         z3 = self.mnt[:-2, 2:]
@@ -109,20 +112,13 @@ class Calcul_attribut (object):
         E = (z1+z2+z3-z7-z8-z9)/(6*self.pas**2)
         F = (5*z5+2*(z2+z4+z6+z8)-(z1+z3+z7+z9))/9
 
+        return A*x**2 + B*y**2 * C*x*y + D*x + E*y + F
+
     def pente(self, fx, fy):
         return np.arctan(np.sqrt(fx ** 2 + fy ** 2)) * 180 / np.pi
 
     def exposition(self, fx, fy):
         return np.arctan2(-fx, -fy) * 180 / np.pi
-
-    def graphe_pente_TPP(self):
-        fx, fy = self.TPP()
-        pente = self.pente(fx, fy)
-
-        plt.figure()
-        plt.imshow(pente, origin='lower', cmap='magma_r')
-        plt.title(f'Pente de {self.name}')
-        plt.colorbar(label='Pente [°]')
 
     def graphe_exposition_TPP(self):
         fx, fy = self.TPP()
@@ -134,24 +130,25 @@ class Calcul_attribut (object):
         plt.colorbar(label='Exposition [°]')
         plt.show()
 
-
     def deriv_mnt(self):
+        fy, fx = np.gradient(self.mnt, self.pas, self.pas)
+        return fx, fy
 
-
-    def affichage_pente_theorique_et_reelle(self):
-        fx, fy = deriv_mnt(X, Y)
+    def affichage_pente_theoriques_et_reelles(self):
+        fx, fy = self.deriv_mnt()
         pente_reel = self.pente(fx, fy)
-        fx, fy = self.TPP(self.mnt)
+        fx, fy = self.TPP()
         pente_tpp = self.pente(fx, fy)
-        fx, fy = self.FCN(self.mnt)
+        fx, fy = self.FCN()
         pente_fcn = self.pente(fx, fy)
+        modelisation_Evans = self.Evans()
 
         # Normaliser les palettes entre 0° et pmax
         pmax = 50
         normalize = Normalize(0, pmax)
-        cmap = 'cividis_r'
+        cmap = cm.gist_earth
 
-        fig, ax = plt.subplots(1, 3, figsize=(12, 5))
+        fig, ax = plt.subplots(1, 4, figsize=(12, 5))
         im = ax[0].imshow(pente_tpp, origin='lower', cmap=cmap, norm=normalize)
         ax[0].set_title('TPP')
         divider = make_axes_locatable(ax[0])
@@ -164,17 +161,28 @@ class Calcul_attribut (object):
         cax = divider.append_axes("right", size="5%", pad=0.05)
         plt.colorbar(im, label='Pente[°]', cax=cax)
 
-        im = ax[2].imshow(pente_reel, origin='lower', cmap=cmap, norm=normalize)
-        ax[2].set_title('Réel')
+        im = ax[2].imshow(pente_fcn, origin='lower', cmap=cmap, norm=normalize)
+        ax[2].set_title('Evans')
         divider = make_axes_locatable(ax[2])
         cax = divider.append_axes("right", size="5%", pad=0.05)
         plt.colorbar(im, label='Pente[°]', cax=cax)
 
+        im = ax[3].imshow(pente_reel, origin='lower', cmap=cmap, norm=normalize)
+        ax[3].set_title('Réel')
+        divider = make_axes_locatable(ax[3])
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(im, label='Pente[°]', cax=cax)
+
+        for a in ax:
+            a.set_xlabel("X")
+            a.set_ylabel("Y")
+
         plt.tight_layout()
+        plt.show()
 
 
 if __name__ == '__main__':
-    fichier = "plan.txt"
+    fichier = "double_sin.txt"
     map = Calcul_attribut.from_file("MNT/" + fichier)
     map.affiche_3D() # affiche le MNT
-    map.pente_TPP()
+    map.affichage_pente_theoriques_et_reelles()
