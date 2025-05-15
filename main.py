@@ -70,6 +70,21 @@ class Calcul_attribut (object):
         fy, fx = np.gradient(self.mnt, self.pas, self.pas)
         return fx, fy
 
+    # -------------------------------------------------------- EXPOSITION --------------------------------------------------------------
+
+    def exposition(self, fx, fy):
+        return np.arctan2(-fx, -fy) * 180 / np.pi
+
+    def graphe_exposition_TPP(self):
+        fx, fy = self.TPP()
+        exposition = self.exposition(fx, fy)
+
+        plt.figure()
+        plt.imshow(exposition, origin='lower', cmap='magma_r')
+        plt.title(f'Exposition de {self.name}')
+        plt.colorbar(label='Exposition [°]')
+        plt.show()
+
     # ------------------------------------------------------ BPI -------------------------------------------------------
 
     def bpi(self):
@@ -121,20 +136,14 @@ class Calcul_attribut (object):
         bpi_cercle(self)
         plt.show()
 
-    # -------------------------------------------------------- EXPOSITION --------------------------------------------------------------
+    # ------------------------------------------------------- RUGOSITE -----------------------------------------------------
 
-    def exposition(self, fx, fy):
-        return np.arctan2(-fx, -fy) * 180 / np.pi
 
-    def graphe_exposition_TPP(self):
-        fx, fy = self.TPP()
-        exposition = self.exposition(fx, fy)
+    # ------------------------------------------------------- RUGOSITE -----------------------------------------------------
 
-        plt.figure()
-        plt.imshow(exposition, origin='lower', cmap='magma_r')
-        plt.title(f'Exposition de {self.name}')
-        plt.colorbar(label='Exposition [°]')
-        plt.show()
+
+    # ------------------------------------------------------ SEGMENTATION -----------------------------------------------------
+
 
     # ------------------------------------------------------- AFFICHAGE -----------------------------------------------------
 
