@@ -77,42 +77,44 @@ class Calcul_attribut (object):
 
     # -------------------------------------------------------- BPI -------------------------------------------------------
 
+
+
     def bpi_carre(self):
-        n_lignes = len(self.mnt)
-        n_colonnes = len(self.mnt[0])
+        mnt = np.array(self.mnt)  
+        n_lignes, n_colonnes = mnt.shape
 
-        print('Nombre de lignes du fichier :', n_lignes)
-        print('Nombre de colonnes du fichier :', n_colonnes)
+        bpi = np.zeros_like(mnt)
 
-        bpi = np.zeros((n_lignes, n_colonnes))
+        somme_voisins = (
+            mnt[:-2, :-2] + mnt[:-2, 1:-1] + mnt[:-2, 2:] +     # ligne du haut
+            mnt[1:-1, :-2]                + mnt[1:-1, 2:] +     # même ligne, colonnes gauche et droite
+            mnt[2:, :-2] + mnt[2:, 1:-1] + mnt[2:, 2:]          # ligne du bas
+        ) / 8
 
-        for i in range(1, n_lignes - 1):
-            for j in range(1, n_colonnes - 1):
-                voisins = [
-                    self.mnt[i-1][j-1], self.mnt[i-1][j], self.mnt[i-1][j+1],
-                    self.mnt[i][j-1],                   self.mnt[i][j+1],
-                    self.mnt[i+1][j-1], self.mnt[i+1][j], self.mnt[i+1][j+1]
-                ]
-                bpi[i][j] = self.mnt[i][j] - (sum(voisins) / 8)
+        bpi[1:-1, 1:-1] = mnt[1:-1, 1:-1] - somme_voisins
+
         return bpi
 
     def bpi_cercle(self):
-        n_lignes = len(self.mnt)
-        n_colonnes = len(self.mnt[0])
+        mnt = np.array(self.mnt)
+        n_lignes, n_colonnes = mnt.shape
 
-        bpi = np.zeros((n_lignes, n_colonnes))
+        bpi = np.zeros_like(mnt)
 
-        for i in range(2, n_lignes - 2):
-            for j in range(2, n_colonnes - 2):
-                voisins = [
-                    self.mnt[i-2][j-1], self.mnt[i-2][j], self.mnt[i-2][j+2],
-                    self.mnt[i-1][j-2], self.mnt[i-1][j-1], self.mnt[i-1][j], self.mnt[i-1][j+1], self.mnt[i-1][j+2],
-                    self.mnt[i][j-2], self.mnt[i][j-1], self.mnt[i][j+1], self.mnt[i][j+2],
-                    self.mnt[i+1][j-2], self.mnt[i+1][j-1], self.mnt[i+1][j], self.mnt[i+1][j+1], self.mnt[i+1][j+2],
-                    self.mnt[i+2][j-2], self.mnt[i+2][j], self.mnt[i+2][j+1]
-                ]
-                bpi[i][j] = self.mnt[i][j] - (sum(voisins) / len(voisins))  # Moyenne des 20 voisins
+        voisins = (
+            mnt[:-4, 1:-3] + mnt[:-4, 2:-2] + mnt[:-4, 4:] +                        # i-2
+            mnt[:-3, 0:-4] + mnt[:-3, 1:-3] + mnt[:-3, 2:-2] + mnt[:-3, 3:-1] + mnt[:-3, 4:] +  # i-1
+            mnt[2:-2, 0:-4] + mnt[2:-2, 1:-3] + mnt[2:-2, 3:-1] + mnt[2:-2, 4:] +  # i
+            mnt[3:-1, 0:-4] + mnt[3:-1, 1:-3] + mnt[3:-1, 2:-2] + mnt[3:-1, 3:-1] + mnt[3:-1, 4:] +  # i+1
+            mnt[4:, 0:-4] + mnt[4:, 2:-2] + mnt[4:, 3:-1]                          # i+2
+        )
+
+        moyenne_voisins = voisins / 20
+
+        bpi[2:-2, 2:-2] = mnt[2:-2, 2:-2] - moyenne_voisins
+
         return bpi
+
 
     # ---------------------------------------------------- - COURBURE --------------------------------------------------------------
 
@@ -155,6 +157,8 @@ class Calcul_attribut (object):
 
 
     # ------------------------------------------------------ RUGOSITE -----------------------------------------------------
+    def rugosité(self):
+        return None
 
 
     # ---------------------------------------------------- SEGMENTATION -----------------------------------------------------
