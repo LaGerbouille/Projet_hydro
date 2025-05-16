@@ -83,15 +83,12 @@ class Calcul_attribut (object):
         mnt = np.array(self.mnt)  
         n_lignes, n_colonnes = mnt.shape
 
-        bpi = np.zeros_like(mnt)
-
-        somme_voisins = (
-            mnt[:-2, :-2] + mnt[:-2, 1:-1] + mnt[:-2, 2:] +     # ligne du haut
-            mnt[1:-1, :-2]                + mnt[1:-1, 2:] +     # même ligne, colonnes gauche et droite
-            mnt[2:, :-2] + mnt[2:, 1:-1] + mnt[2:, 2:]          # ligne du bas
-        ) / 8
-
-        bpi[1:-1, 1:-1] = mnt[1:-1, 1:-1] - somme_voisins
+        noyau = np.array([
+            [1, 1, 1],
+            [1, 1, 1],
+            [1, 1, 1]
+        ]) / 9
+        voisins = convolve2
 
         return bpi
 
@@ -384,3 +381,4 @@ if __name__ == '__main__':
     map = Calcul_attribut.from_file("MNT/" + fichier)
     map.affichage_exposition_theoriques_et_reelles()
 
+ 
