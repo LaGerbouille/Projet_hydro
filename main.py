@@ -70,24 +70,13 @@ class Calcul_attribut (object):
         fy, fx = np.gradient(self.mnt, self.pas, self.pas)
         return fx, fy
 
-    # -------------------------------------------------------- EXPOSITION --------------------------------------------------------------
+    # ---------------------------------------------------- EXPOSITION --------------------------------------------------------------
 
     def exposition(self, fx, fy):
         return np.arctan2(-fx, -fy) * 180 / np.pi
 
-    def graphe_exposition_TPP(self):
-        fx, fy = self.TPP()
-        exposition = self.exposition(fx, fy)
+    # -------------------------------------------------------- BPI -------------------------------------------------------
 
-        plt.figure()
-        plt.imshow(exposition, origin='lower', cmap='magma_r')
-        plt.title(f'Exposition de {self.name}')
-        plt.colorbar(label='Exposition [°]')
-        plt.show()
-
-    # ------------------------------------------------------ BPI -------------------------------------------------------
-
-    
     def bpi_carre(self):
         n_lignes = len(self.mnt)
         n_colonnes = len(self.mnt[0])
@@ -125,7 +114,7 @@ class Calcul_attribut (object):
                 bpi[i][j] = self.mnt[i][j] - (sum(voisins) / len(voisins))  # Moyenne des 20 voisins
         return bpi
 
-    # -------------------------------------------------------- COURBURE --------------------------------------------------------------
+    # ---------------------------------------------------- - COURBURE --------------------------------------------------------------
 
     def courbures_TPP(self):
         fx = (self.mnt[1:-1, 2:] - self.mnt[1:-1, 1:-1]) / self.pas
@@ -199,13 +188,17 @@ class Calcul_attribut (object):
 
         return kmean
 
-    # ------------------------------------------------------ SEGMENTATION -----------------------------------------------------
+
+    # ------------------------------------------------------ RUGOSITE -----------------------------------------------------
 
 
-    # ------------------------------------------------------- AFFICHAGE -----------------------------------------------------
+    # ---------------------------------------------------- SEGMENTATION -----------------------------------------------------
+
+
+    # ------------------------------------------------------ AFFICHAGE -----------------------------------------------------
 
     # sert à afficher le graphe 2D du MNT
-    def affiche(self):
+    def affiche_2D(self):
         # Dimensions des terrains artificiels
         x = np.arange(0, self.mnt.shape[0])
         y = np.arange(0, self.mnt.shape[0])
@@ -315,6 +308,56 @@ class Calcul_attribut (object):
         plt.tight_layout()
         plt.show()
 
+    def affichage_exposition_theoriques_et_reelles(self):
+        fx, fy = self.deriv_mnt()
+        exposition_reel = self.exposition(fx, fy)
+        fx, fy = self.TPP()
+        exposition_tpp = self.exposition(fx, fy)
+        fx, fy = self.FCN()
+        exposition_fcn = self.exposition(fx, fy)
+        fx, fy = self.Evans()
+        exposition_evans = self.exposition(fx, fy)
+
+        # Normaliser les palettes entre 0° et pmax
+        pmax = 50
+        normalize = Normalize(0, pmax)
+        cmap = 'twilight'
+
+        fig, ax = plt.subplots(2, 2, figsize=(10, 8))
+        ax = ax.flatten()
+
+        im = ax[0].imshow(exposition_tpp, origin='lower', cmap=cmap, norm=normalize)
+        ax[0].set_title('TPP')
+        divider = make_axes_locatable(ax[0])
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(im, label='Exposition[°]', cax=cax)
+
+        im = ax[1].imshow(exposition_fcn, origin='lower', cmap=cmap, norm=normalize)
+        ax[1].set_title('FCN')
+        divider = make_axes_locatable(ax[1])
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(im, label='Exposition[°]', cax=cax)
+
+        im = ax[2].imshow(exposition_evans, origin='lower', cmap=cmap, norm=normalize)
+        ax[2].set_title('Evans')
+        divider = make_axes_locatable(ax[2])
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(im, label='Exposition[°]', cax=cax)
+
+        im = ax[3].imshow(exposition_reel, origin='lower', cmap=cmap, norm=normalize)
+        ax[3].set_title('Réel')
+        divider = make_axes_locatable(ax[3])
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(im, label='Exposition[°]', cax=cax)
+
+        for a in ax:
+            a.set_xlabel("X")
+            a.set_ylabel("Y")
+
+        plt.suptitle(self.name)
+        plt.tight_layout()
+        plt.show()
+
     def affichage_bpi_cercle(self):
         
         plt.figure()
@@ -333,9 +376,7 @@ class Calcul_attribut (object):
 
 
 if __name__ == '__main__':
-    fichier = "double_sin.txt"
+    fichier = "sin_card.txt"
     map = Calcul_attribut.from_file("MNT/" + fichier)
-    map.affiche()
-    map.affichage_bpi_carre()
-    map.affichage_bpi_cercle()
+    map.affichage_exposition_theoriques_et_reelles()
 
