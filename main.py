@@ -65,15 +65,19 @@ def affiche_caracteristique_global():
         plt.ylabel("Fréquence")
         plt.hist(mnt.ravel(), bins=50, color='steelblue', edgecolor='black')
         plt.show()
+        
 
 if __name__ == '__main__':
     fichier = "double_sin.txt"
     mnt = np.loadtxt("MNT/" + fichier)
     pas = 8
+    pas_bpi=1
     name = fichier[:-4]
 
-    bpi = BPI(mnt, pas, name)
+    bpi = BPI(mnt, pas_bpi, name)
     pente = Pente(mnt, pas, name)
     rugosite = Rugosite(mnt, pas, name)
     courbure = Courbure(mnt, pas, name)
-
+    bpi.affichage_bpi_carre()
+    bpi.affichage_bpi_cercle()
+    
