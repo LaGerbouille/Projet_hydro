@@ -1,3 +1,5 @@
+from matplotlib import cm
+from matplotlib.colors import LightSource
 from BPI import *
 from Pente import *
 from Rugosite import *
@@ -75,4 +77,3 @@ if __name__ == '__main__':
     rugosite = Rugosite(mnt, pas, name)
     courbure = Courbure(mnt, pas, name)
 
-    pente.affichage_pente()
