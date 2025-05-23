@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib.colors import CenteredNorm
 
 class Pente():
     def __init__(self, mnt, pas, name):
