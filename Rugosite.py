@@ -114,4 +114,3 @@ class Rugosite():
         plt.title(f'Rugosité (vecteurs normaux) de {self.name} avec noyau {n}x{n}')
         plt.colorbar(label='Rugosité')
         plt.show()
-
