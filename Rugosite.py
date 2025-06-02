@@ -40,11 +40,11 @@ class Rugosite():
         rugosite = np.sqrt(np.clip(voisins_mnt_carre - voisins**2, 0, None)) #le np.clip permet d'éviter les racines carrés de nombres négatifs        
         return rugosite
 
-    def subplot_rugosite(self, tailles):
+    def subplot_rugosite_ecart_type(self, tailles_voisinage):
         
         fig, axes = plt.subplots(3, 3, figsize=(15, 12))
         
-        fig.suptitle(f'Rugosité (écart-type) pour différents voisinages - {rugosite.name}', fontsize=16)        
+        fig.suptitle(f'Rugosité (écart-type) pour différents voisinages - {self.name}', fontsize=16)        
         
         for ax, n in zip(axes.flat, tailles_voisinage):
 
@@ -62,11 +62,7 @@ class Rugosite():
         plt.subplots_adjust(top=0.90)
         plt.show()
 
-fichier = 'bertheaume_z.txt' 
-mnt = np.loadtxt("MNT/" + fichier)
-pas = 8
-name = fichier[:-4]
-rugosite = Rugosite(mnt, pas, name)
+    def vecteurs_normaux(self,n):
+        x_i = np.sin()
 
-tailles_voisinage = [3, 5, 7, 9, 11, 13, 15,17, 19]
-rugosite.subplot_rugosite(tailles_voisinage)
+

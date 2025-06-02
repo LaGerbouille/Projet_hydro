@@ -57,13 +57,6 @@ class BPI():
         plt.colorbar(label='BPI')
         plt.show()
 
-fichier = 'Dune2_Dunkerque_Extrait1_50cm.xyz' 
 
-mnt = np.loadtxt("MNT/" + fichier)
-pas = 8
-pas_bpi=1
-name = fichier[:-4]
-bpi = BPI(mnt, pas_bpi, name)
-bpi.affichage_bpi_carre(3)
-bpi.affichage_bpi_cercle(3)
+
 
