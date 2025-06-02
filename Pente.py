@@ -112,7 +112,7 @@ class Pente():
         # fonction de numpy.linalg retournant la solution de l'équation : a @ x = b
         Xhat = la.lstsq(M, zi, rcond=None)[0].flatten()
         A, B, C, D, E, F = Xhat
-        print(Xhat)
+        print("coefficients : ", Xhat)
         return (A * xi ** 2 + B * yi ** 2 + C * xi * yi + D * xi + E * yi + F)
 
     # ---------------------------------------------------- AFFICHAGE --------------------------------------------------
