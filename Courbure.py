@@ -1,5 +1,5 @@
 import numpy as np
-
+from scipy.ndimage import gaussian_filter
 from scipy.ndimage import convolve
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -50,6 +50,7 @@ class Courbure():
         return kmin, kmax
 
 
+"""    
     def trace_classification_courbures(self):
         kmin, kmax = self.courbures_pente_nulle()
         kv, kh = self.courbures_pente_non_nulle()
@@ -101,22 +102,14 @@ class Courbure():
         plt.ylabel('Latitude (pixel)')
         plt.show()
 
-"""
+
 if __name__ == '__main__':
     fichier = "z_Zone1_8m.txt"
     mnt = np.loadtxt("MNT/" + fichier)
+    mnt2 = gaussian_filter(mnt, 3, mode='constant', cval=0.0)
+    pas = 1
     name = fichier[:-4]
     cmap=plt.get_cmap('tab20',15)
-    courbure = Courbure(mnt, pas, name)
-    COULEUR=courbure.trace_classification-courbures()
-    print(COULEUR)
-    # Créer la figure et l'axe
-    plt.imshow(COULEUR, cmap=cmap, origin='lower')
-    cbar=plt.colorbar(ticks=range(1, 16), label='Classes de Dikau')
-    cbar.set_ticklabels(['nose', 'shoulder slope', 'hollow shoulder', 'spur', 'planar slope', 'hollow', 'spur foot', 'foot slope', 'hollow foot', 'peak', 'ridge', 'plain', 'saddle', 'channel', 'pit'])
-    plt.title('Classification de Dikau des fonds marins')
-    plt.xlabel('Longitude (pixel)')
-    plt.ylabel('Latitude (pixel)')
-    plt.show()
-
+    courbure = Courbure(mnt2, pas, name)
+    courbure.trace_classification_courbures()
 """
