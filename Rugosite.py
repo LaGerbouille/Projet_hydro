@@ -8,21 +8,22 @@ class Rugosite():
         self.mnt = mnt
         self.pas = pas
         self.name = name
-     # def rug_ecart_type(self, n):
-    #     # à ne pas utiliser pour calculer la rugosité 3*3,5*5,7*7 ... car cette méthode demande bcp trop de temps de calcul
-    #     print('je suis au debut de rug_ecart_type')
-    #     rugosite = generic_filter(self.mnt, np.nanstd, size=n, mode='constant', cval=np.nan)
-    #     print('je suis a la fin de rug_ecart_type')
-    #     return rugosite
 
-    # def rugosite_ecart_type_plot(self, n):
-    #     rugosite = self.rug_ecart_type(n)
-    #     print('je suis dans rug_ecart_type_plot')
-    #     plt.figure()
-    #     plt.imshow(rugosite, origin='lower', cmap='viridis')
-    #     plt.title(f'Rugosité (écart-type) de {self.name}')
-    #     plt.colorbar(label='Rugosité')
-    #     plt.show()
+    def rug_ecart_type(self, n):
+        # à ne pas utiliser pour calculer la rugosité 3*3,5*5,7*7 ... car cette méthode demande bcp trop de temps de calcul
+        print('je suis au debut de rug_ecart_type')
+        rugosite = generic_filter(self.mnt, np.nanstd, size=n, mode='constant', cval=np.nan)
+        print('je suis a la fin de rug_ecart_type')
+        return rugosite
+
+    def rugosite_ecart_type_plot(self, n):
+        rugosite = self.rug_ecart_type(n)
+        print('je suis dans rug_ecart_type_plot')
+        plt.figure()
+        plt.imshow(rugosite, origin='lower', cmap='viridis')
+        plt.title(f'Rugosité (écart-type) de {self.name}')
+        plt.colorbar(label='Rugosité')
+        plt.show()
 
     def rugosite_ecart_type_analytique(self, n):
 
@@ -61,7 +62,7 @@ class Rugosite():
         plt.subplots_adjust(top=0.90)
         plt.show()
 
-fichier = 'Dune2_Dunkerque_Extrait1_50cm.xyz' 
+fichier = 'bertheaume_z.txt' 
 mnt = np.loadtxt("MNT/" + fichier)
 pas = 8
 name = fichier[:-4]
