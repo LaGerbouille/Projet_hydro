@@ -18,21 +18,21 @@ class Pente():
         self.name = name
 
     # -------------------------------------------------- CALCULS ------------------------------------------------------
-    def TPP(self):
-        fx = convolve(self.mnt, np.array([[0, 0, 0], [0, -1, 1], [0, 0, 0]]) / self.pas, mode='constant', cval=np.nan)
-        fy = convolve(self.mnt, np.array([[0, 0, 0], [0, -1, 0], [0, 1, 0]]) / self.pas, mode='constant', cval=np.nan)
+    def TPP(self, mnt):
+        fx = convolve(mnt, np.array([[0, 0, 0], [0, -1, 1], [0, 0, 0]]) / self.pas, mode='constant', cval=np.nan)
+        fy = convolve(mnt, np.array([[0, 0, 0], [0, -1, 0], [0, 1, 0]]) / self.pas, mode='constant', cval=np.nan)
 
         return fx, fy
 
-    def FCN(self):
-        fx = convolve(self.mnt, np.array([[0, 0, 0], [-1, 0, 1], [0, 0, 0]]) / (2*self.pas), mode='constant', cval=np.nan)
-        fy = convolve(self.mnt, np.array([[0, 1, 0], [0, 0, 0], [0, -1, 0]]) / (2*self.pas), mode='constant', cval=np.nan)
+    def FCN(self, mnt):
+        fx = convolve(mnt, np.array([[0, 0, 0], [-1, 0, 1], [0, 0, 0]]) / (2*self.pas), mode='constant', cval=np.nan)
+        fy = convolve(mnt, np.array([[0, 1, 0], [0, 0, 0], [0, -1, 0]]) / (2*self.pas), mode='constant', cval=np.nan)
 
         return fx, fy
 
-    def Evans(self):
-        fx = convolve(self.mnt, np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]]) / (6*self.pas**2), mode='constant', cval=np.nan)
-        fy = convolve(self.mnt, np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]]) / (6*self.pas**2), mode='constant', cval=np.nan)
+    def Evans(self, mnt):
+        fx = convolve(mnt, np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]]) / (6*self.pas**2), mode='constant', cval=np.nan)
+        fy = convolve(mnt, np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]]) / (6*self.pas**2), mode='constant', cval=np.nan)
 
         return fx, fy
 
@@ -90,27 +90,30 @@ class Pente():
 
         return [moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans]
 
-    def calcul_moindres_carres(self, r):
-        moindres_carres = generic_filter(self.mnt, self.moindres_carres(r), size=(r, r))
-        print("hello world !")
-        return moindres_carres
+    def coords_grille(self, r):
+        """Retourne les coordonnées xi, yi d'une grille carrée centrée en (0,0)"""
+        s = np.arange(-(r // 2), r // 2 + 1)
+        yi, xi = np.meshgrid(s, -s)
+        return xi.flatten(), yi.flatten()
 
     def moindres_carres(self, r):
-        un = np.ones(r).reshape((-1, 1))
-        M = np.hstack(((xi ** 2).reshape((-1, 1)), (yi ** 2).reshape((-1, 1)), (xi * yi).reshape((-1, 1)), (xi).reshape((-1, 1)), (yi).reshape((-1, 1)), un))
-        Y = zi.reshape((-1, 1))
+        return generic_filter(self.mnt, lambda values: self.fit_surface_quadrique(values, r), size=(r, r))
 
-        N = M.T @ M
-        Xhat = (la.inv(N) @ M.T @ Y).reshape((1, -1))[0]
+    def fit_surface_quadrique(self, values, r):
+        """Fonction appliquée localement par generic_filter"""
+        zi = values.reshape((-1, 1))
+        xi, yi = self.coords_grille(r)
+        xi = xi.reshape((-1, 1))
+        yi = yi.reshape((-1, 1))
+        un = np.ones_like(xi)
 
-        A = Xhat[0]
-        B = Xhat[1]
-        C = Xhat[2]
-        D = Xhat[3]
-        E = Xhat[4]
-        F = Xhat[5]
+        M = np.hstack([xi ** 2, yi ** 2, xi * yi, xi, yi, un])
 
-        return A * xi ** 2 + B * yi **2 + C * xi * yi + D * xi + E * yi + F
+        # fonction de numpy.linalg retournant la solution de l'équation : a @ x = b
+        Xhat = la.lstsq(M, zi, rcond=None)[0].flatten()
+        A, B, C, D, E, F = Xhat
+        print(Xhat)
+        return (A * xi ** 2 + B * yi ** 2 + C * xi * yi + D * xi + E * yi + F)
 
     # ---------------------------------------------------- AFFICHAGE --------------------------------------------------
     def affichage_pente(self):
@@ -120,6 +123,8 @@ class Pente():
         pente_fcn = self.pente(fx, fy)
         fx, fy = self.Evans(self.mnt)
         pente_evans = self.pente(fx, fy)
+
+        self.moindres_carres(3)
 
         cmap = 'cividis_r'
 
