@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.ndimage import convolve
-
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 
 class Courbure():
     def __init__(self, mnt, pas, name):
@@ -87,7 +88,16 @@ class Courbure():
                     elif kv[i][j] <= -eps and kh[i][j] <= -eps:
                         COULEUR[i][j] = 9
 
+        couleurs = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#00FFFF', '#FF00FF', '#800000', '#008000', '#000080', '#808000', '#800080', '#008080', '#C0C0C0', '#FFA500', '#A52A2A']
 
+        # Créer un colormap avec les couleurs
+        cmap = mcolors.ListedColormap(couleurs)
 
-
-liste_couleur=[0,'blue','red','yellow','green','pink','cyan','purple','orange','magenta','black','white','gray','brown','darkgreen','darkred']
+        # Créer la figure et l'axe
+        plt.figure(figsize=(8, 6))
+        plt.imshow(COULEUR, cmap=cmap, origin='upper')
+        plt.colorbar(ticks=range(1, 16), label='Classes de Dikau')
+        plt.title('Classification de Dikau des fonds marins')
+        plt.xlabel('Longitude (pixel)')
+        plt.ylabel('Latitude (pixel)')
+        plt.show()
