@@ -92,7 +92,7 @@ class Pente():
 
     def calcul_moindres_carres(self, r):
         moindres_carres = generic_filter(self.mnt, self.moindres_carres(r), size=(r, r))
-
+        print("hello world !")
         return moindres_carres
 
     def moindres_carres(self, r):
