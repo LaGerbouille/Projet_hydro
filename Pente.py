@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.linalg as la
 from random import random
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
@@ -6,7 +7,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.colors import CenteredNorm
 from matplotlib import cm
 from matplotlib.colors import LightSource
-from scipy.ndimage import convolve
+from scipy.ndimage import convolve, generic_filter
 import cmocean
 
 
@@ -17,21 +18,21 @@ class Pente():
         self.name = name
 
     # -------------------------------------------------- CALCULS ------------------------------------------------------
-    def TPP(self, mnt):
-        fx = convolve(mnt, np.array([[0, 0, 0], [0, -1, 1], [0, 0, 0]]) / self.pas, mode='constant', cval=np.nan)
-        fy = convolve(mnt, np.array([[0, 0, 0], [0, -1, 0], [0, 1, 0]]) / self.pas, mode='constant', cval=np.nan)
+    def TPP(self):
+        fx = convolve(self.mnt, np.array([[0, 0, 0], [0, -1, 1], [0, 0, 0]]) / self.pas, mode='constant', cval=np.nan)
+        fy = convolve(self.mnt, np.array([[0, 0, 0], [0, -1, 0], [0, 1, 0]]) / self.pas, mode='constant', cval=np.nan)
 
         return fx, fy
 
-    def FCN(self, mnt):
-        fx = convolve(mnt, np.array([[0, 0, 0], [-1, 0, 1], [0, 0, 0]]) / (2*self.pas), mode='constant', cval=np.nan)
-        fy = convolve(mnt, np.array([[0, 1, 0], [0, 0, 0], [0, -1, 0]]) / (2*self.pas), mode='constant', cval=np.nan)
+    def FCN(self):
+        fx = convolve(self.mnt, np.array([[0, 0, 0], [-1, 0, 1], [0, 0, 0]]) / (2*self.pas), mode='constant', cval=np.nan)
+        fy = convolve(self.mnt, np.array([[0, 1, 0], [0, 0, 0], [0, -1, 0]]) / (2*self.pas), mode='constant', cval=np.nan)
 
         return fx, fy
 
-    def Evans(self, mnt):
-        fx = convolve(mnt, np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]]) / (6*self.pas**2), mode='constant', cval=np.nan)
-        fy = convolve(mnt, np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]]) / (6*self.pas**2), mode='constant', cval=np.nan)
+    def Evans(self):
+        fx = convolve(self.mnt, np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]]) / (6*self.pas**2), mode='constant', cval=np.nan)
+        fy = convolve(self.mnt, np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]]) / (6*self.pas**2), mode='constant', cval=np.nan)
 
         return fx, fy
 
@@ -88,6 +89,28 @@ class Pente():
         ecart_type_pente_Evans = np.nanstd(np.nanstd(pentes[2], axis=0))
 
         return [moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans]
+
+    def calcul_moindres_carres(self, r):
+        moindres_carres = generic_filter(self.mnt, self.moindres_carres(r), size=(r, r))
+
+        return moindres_carres
+
+    def moindres_carres(self, r):
+        un = np.ones(r).reshape((-1, 1))
+        M = np.hstack(((xi ** 2).reshape((-1, 1)), (yi ** 2).reshape((-1, 1)), (xi * yi).reshape((-1, 1)), (xi).reshape((-1, 1)), (yi).reshape((-1, 1)), un))
+        Y = zi.reshape((-1, 1))
+
+        N = M.T @ M
+        Xhat = (la.inv(N) @ M.T @ Y).reshape((1, -1))[0]
+
+        A = Xhat[0]
+        B = Xhat[1]
+        C = Xhat[2]
+        D = Xhat[3]
+        E = Xhat[4]
+        F = Xhat[5]
+
+        return A * xi ** 2 + B * yi **2 + C * xi * yi + D * xi + E * yi + F
 
     # ---------------------------------------------------- AFFICHAGE --------------------------------------------------
     def affichage_pente(self):
