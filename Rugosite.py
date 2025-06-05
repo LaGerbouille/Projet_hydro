@@ -116,7 +116,7 @@ class Rugosite():
         plt.colorbar(label='Rugosité')
         plt.show()
     
-    def rugosite_gaussienne(self, n , p):
+    def rugosite_gaussienne(self, n , p):# n corrrespond a la taille du noyeau gaussien et p a la taille du noyeau de la convolution poiur calculer la rugosite
 
         mnt_lisse = gaussian_filter(self.mnt, sigma=n)
 
