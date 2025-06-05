@@ -44,7 +44,7 @@ class BPI():
 
     def affichage_bpi_cercle(self,r):
         plt.figure()
-        plt.imshow(self.bpi_cercle(r), origin='lower', cmap='bwr',norm=CenteredNorm(0,halfrange=0.1))
+        plt.imshow(self.bpi_cercle(r), origin='upper', cmap='bwr',norm=CenteredNorm(0,halfrange=0.1))
         plt.title(f'BPI cercle de {self.name}')
         plt.colorbar(label='BPI')
         plt.show()
@@ -52,18 +52,7 @@ class BPI():
     def affichage_bpi_carre(self,n):
 
         plt.figure()
-        plt.imshow(self.bpi_carre(n), origin='lower', cmap='bwr',norm=CenteredNorm(0,halfrange=0.1))
+        plt.imshow(self.bpi_carre(n), origin='upper', cmap='bwr',norm=CenteredNorm(0,halfrange=0.1))
         plt.title(f'BPI de {self.name}')
         plt.colorbar(label='BPI')
         plt.show()
-
-fichier = 'Dune2_Dunkerque_Extrait1_50cm.xyz' 
-
-mnt = np.loadtxt("MNT/" + fichier)
-pas = 8
-pas_bpi=1
-name = fichier[:-4]
-bpi = BPI(mnt, pas_bpi, name)
-bpi.affichage_bpi_carre(3)
-bpi.affichage_bpi_cercle(3)
-

@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.ndimage import gaussian_filter
 from scipy.ndimage import convolve
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -27,8 +28,10 @@ class Courbure():
         fxx = 2 * A
         fyy = 2 * B
         fxy = C
-        eps = 0.01
-        p = (fx ** 2 + fy ** 2) * ((fx ** 2 + fy ** 2) < eps) * np.nan
+        eps = 0.05
+        p = (fx ** 2 + fy ** 2) * (fx ** 2 + fy ** 2)
+        p[abs(p) < eps] = np.nan
+        print(p)
         q = p + 1
         kv = -(fxx * fx ** 2 + 2 * fxy * fx * fy + fyy * fy ** 2) / (p * (q ** 3) ** (1 / 2))
         kh = -(fxx * fy ** 2 - 2 * fxy * fx * fy + fyy * fx ** 2) / (p * q ** (1 / 2))
@@ -47,15 +50,17 @@ class Courbure():
         return kmin, kmax
 
 
-    def trace_courbure(self):
+"""    
+    def trace_classification_courbures(self):
         kmin, kmax = self.courbures_pente_nulle()
         kv, kh = self.courbures_pente_non_nulle()
         a, b = self.mnt.shape
-        eps = 0.01
+        eps = 0.005
+
         COULEUR = np.zeros((a, b))
         for i in range(a):
             for j in range(b):
-                if kv[i][j] == kh[i][j] == np.nan:
+                if np.isnan(kv[i][j]) and np.isnan(kh[i][j]):
                     if kmin[i][j] >= eps and kmax[i][j] >= eps:
                         COULEUR[i][j] = 10
                     elif abs(kmin[i][j]) < eps and kmax[i][j] >= eps:
@@ -88,16 +93,23 @@ class Courbure():
                     elif kv[i][j] <= -eps and kh[i][j] <= -eps:
                         COULEUR[i][j] = 9
 
-        couleurs = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#00FFFF', '#FF00FF', '#800000', '#008000', '#000080', '#808000', '#800080', '#008080', '#C0C0C0', '#FFA500', '#A52A2A']
-
-        # Créer un colormap avec les couleurs
-        cmap = mcolors.ListedColormap(couleurs)
-
-        # Créer la figure et l'axe
-        plt.figure(figsize=(8, 6))
-        plt.imshow(COULEUR, cmap=cmap, origin='upper')
-        plt.colorbar(ticks=range(1, 16), label='Classes de Dikau')
+        cmap = plt.get_cmap('tab20', 15)
+        plt.imshow(COULEUR, cmap=cmap, origin='lower')
+        cbar = plt.colorbar(ticks=range(1, 16), label='Classes de Dikau')
+        cbar.set_ticklabels(['nose', 'shoulder slope', 'hollow shoulder', 'spur', 'planar slope', 'hollow', 'spur foot', 'foot slope', 'hollow foot', 'peak', 'ridge', 'plain', 'saddle', 'channel', 'pit'])
         plt.title('Classification de Dikau des fonds marins')
         plt.xlabel('Longitude (pixel)')
         plt.ylabel('Latitude (pixel)')
         plt.show()
+
+
+if __name__ == '__main__':
+    fichier = "z_Zone1_8m.txt"
+    mnt = np.loadtxt("MNT/" + fichier)
+    mnt2 = gaussian_filter(mnt, 3, mode='constant', cval=0.0)
+    pas = 1
+    name = fichier[:-4]
+    cmap=plt.get_cmap('tab20',15)
+    courbure = Courbure(mnt2, pas, name)
+    courbure.trace_classification_courbures()
+"""
