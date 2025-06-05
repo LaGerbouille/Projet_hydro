@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import generic_filter
 from scipy.ndimage import convolve
 from Pente import Pente
+from scipy.ndimage import gaussian_filter
 
 class Rugosite():
     def __init__(self, mnt, pas, name):
@@ -110,7 +111,24 @@ class Rugosite():
         
         rugosite = self.rugosite_vecteurs_normaux(n)
         plt.figure()
-        plt.imshow(rugosite, origin='lower', cmap='viridis')
+        plt.imshow(rugosite, origin='upper', cmap='viridis')
         plt.title(f'Rugosité (vecteurs normaux) de {self.name} avec noyau {n}x{n}')
+        plt.colorbar(label='Rugosité')
+        plt.show()
+    
+    def rugosite_gaussienne(self, n , p):
+
+        mnt_lisse = gaussian_filter(self.mnt, sigma=n)
+
+        gausse_carre = convolve((self.mnt - mnt_lisse)**2, np.ones((p, p)) / (p**2), mode='constant', cval=np.nan)
+        gausse = convolve((self.mnt - mnt_lisse), np.ones((p,p))/(p**2), mode='constant', cval=np.nan)
+        rug_gausse = (gausse_carre - gausse**2)
+        return rug_gausse
+    
+    def affichage_rugosite_gaussienne(self,n,p):
+        rug_gausse = self.rugosite_gaussienne(n,p)
+        plt.figure()
+        plt.imshow(rug_gausse, origin='upper', cmap='viridis')
+        plt.title(f'Rugosité gaussienne de {self.name} avec sigma={n}')
         plt.colorbar(label='Rugosité')
         plt.show()
