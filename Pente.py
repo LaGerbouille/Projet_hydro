@@ -58,7 +58,7 @@ class Pente():
 
         return fx, fy
 
-    def calcul_incertitudes(self, sigma, N):
+    def calcul_incertitudes_modele(self, sigma, N):
         w, h = self.mnt.shape
         pentes = np.zeros((3, N, w, h))
         for methode in range(3):
@@ -86,16 +86,44 @@ class Pente():
 
         return [moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans]
 
-    def coords_grille(self, r):
+    def calcul_incertitudes_terrain_reel(self, incertitude):
+        bruit_blanc = np.random.normal(loc=0.0, scale=incertitude)
+        mnt_bruite = self.mnt + bruit_blanc
+
+        pentes = np.zeros((3, mnt_bruite.shape[0], mnt_bruite.shape[1]))
+
+        for methode in range(3):
+            fx, fy = 0, 0
+            if methode == 0:
+                fx, fy = self.TPP(mnt_bruite)
+            elif methode == 1:
+                fx, fy = self.FCN(mnt_bruite)
+            elif methode == 2:
+                fx, fy = self.Evans(mnt_bruite)
+
+            pentes[methode] = self.pente(fx, fy)
+
+        moyenne_pente_TPP = np.nanmean(np.nanmean(pentes[0], axis=0))
+        ecart_type_pente_TPP = np.nanstd(np.nanstd(pentes[0], axis=0))
+
+        moyenne_pente_FCN = np.nanmean(np.nanmean(pentes[1], axis=0))
+        ecart_type_pente_FCN = np.nanstd(np.nanstd(pentes[1], axis=0))
+
+        moyenne_pente_Evans = np.nanmean(np.nanmean(pentes[2], axis=0))
+        ecart_type_pente_Evans = np.nanstd(np.nanstd(pentes[2], axis=0))
+
+        return [moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans]
+
+    def coords_grille(self, r=3):
         """Retourne les coordonnées xi, yi d'une grille carrée centrée en (0,0)"""
         s = np.arange(-(r // 2), r // 2 + 1)
         yi, xi = np.meshgrid(s, -s)
         return xi.flatten(), yi.flatten()
 
-    def moindres_carres(self, r):
+    def moindres_carres(self, r=3):
         return generic_filter(self.mnt, lambda values: self.fit_surface_quadrique(values, r), size=(r, r))
 
-    def fit_surface_quadrique(self, values, r):
+    def fit_surface_quadrique(self, values, r=3):
         """Fonction appliquée localement par generic_filter"""
         zi = values.reshape((-1, 1))
         xi, yi = self.coords_grille(r)
@@ -109,7 +137,7 @@ class Pente():
         Xhat = la.lstsq(M, zi, rcond=None)[0].flatten()
         D = Xhat[3]
         E = Xhat[4]
-        return np.degrees(np.arctan(np.sqrt(D ** 2 + E ** 2)))
+        return self.pente(D, E)
 
     def scatter_pente(self, pente_x, pente_y):
         # Aplatir et retirer les NaN
@@ -134,7 +162,7 @@ class Pente():
         diff = self.moindres_carres(3) - pente_evans
         diff[np.isnan(diff) | (diff < 1e-10)] = 0
 
-        print("Différence méthodes Moindres carrés - Evans. Grille 3 x 3 : ", diff)
+        print("Différence pente méthodes Moindres carrés - Evans. Grille 3 x 3 : \n", diff)
 
         cmap = 'cividis_r'
 
@@ -347,11 +375,14 @@ class Pente():
         plt.show()
 
     def affichage_incertitude_monte_carlo(self, sigma, N):
-        moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans = self.calcul_incertitudes(sigma, N)
+        moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans = self.calcul_incertitudes_modele(sigma, N)
 
-        print(f'TPP (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_TPP} \n\t - ecart type : {ecart_type_pente_TPP}')
-        print(f'FCN (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_FCN} \n\t - ecart type : {ecart_type_pente_FCN}')
-        print(f'Evans (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_Evans} \n\t - ecart type : {ecart_type_pente_Evans}')
+        print(
+            f'TPP (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_TPP} \n\t - ecart type : {ecart_type_pente_TPP}')
+        print(
+            f'FCN (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_FCN} \n\t - ecart type : {ecart_type_pente_FCN}')
+        print(
+            f'Evans (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_Evans} \n\t - ecart type : {ecart_type_pente_Evans}')
 
     def affichage_incertitudes_modele_artificiel_fonction_ecart_type(self, list_sigma, N):
         moy_TPP = np.zeros(len(list_sigma))
@@ -362,7 +393,7 @@ class Pente():
         std_Evans = np.zeros(len(list_sigma))
 
         for i, sigma in enumerate(list_sigma):
-            moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans = self.calcul_incertitudes(sigma, N)
+            moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans = self.calcul_incertitudes_modele(sigma, N)
             moy_TPP[i] = moyenne_pente_TPP
             std_TPP[i] = ecart_type_pente_TPP
             moy_FCN[i] = moyenne_pente_FCN
@@ -385,6 +416,16 @@ class Pente():
         ax[1].legend()
 
         plt.show()
+
+    def affichage_incertitudes_terrain_reel(self, incertitude):
+        moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans = self.calcul_incertitudes_terrain_reel(incertitude)
+
+        print(
+            f'TPP : \n\t - moyenne : {moyenne_pente_TPP} \n\t - ecart type : {ecart_type_pente_TPP}')
+        print(
+            f'FCN : \n\t - moyenne : {moyenne_pente_FCN} \n\t - ecart type : {ecart_type_pente_FCN}')
+        print(
+            f'Evans : \n\t - moyenne : {moyenne_pente_Evans} \n\t - ecart type : {ecart_type_pente_Evans}')
 
     def affichage_3D(self):
         cmap = cmocean.cm.tarn
