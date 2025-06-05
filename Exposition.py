@@ -19,7 +19,7 @@ class Exposition():
     # -------------------------------------------------- CALCULS ------------------------------------------------------
     def TPP(self, mnt):
         fx = convolve(mnt, np.array([[0, 0, 0], [0, -1, 1], [0, 0, 0]]) / self.pas, mode='constant', cval=np.nan)
-        fy = convolve(mnt, np.array([[0, 0, 0], [0, -1, 0], [0, 1, 0]]) / self.pas, mode='constant', cval=np.nan)
+        fy = convolve(mnt, np.array([[0, 0, 0], [0, 1, 0], [0, -1, 0]]) / self.pas, mode='constant', cval=np.nan)
 
         return fx, fy
 
@@ -138,7 +138,7 @@ class Exposition():
         D = Xhat[3]
         E = Xhat[4]
 
-        return self.exposition(D, E)
+        return self.exposition(-E, -D)
 
     def scatter_exposition(self, exposition_x, exposition_y):
         # Aplatir et retirer les NaN
@@ -165,7 +165,7 @@ class Exposition():
 
         print("Différence exposition méthodes Moindres carrés - Evans. Grille 3 x 3 : \n", diff)
 
-        cmap = 'twilight_shifted'
+        cmap = plt.cm.twilight_shifted
 
         fig, ax = plt.subplots(1, 4, figsize=(12, 5))
 
@@ -201,23 +201,47 @@ class Exposition():
         plt.tight_layout()
         plt.show()
 
-    def affichage_differences_exposition_theorique(self, sigma=3):
-        """
-        Affiche les différences de expositions
-        :param sigma: bruit blanc (unsigned int)
-        :return:
-        """
-        bruit_blanc = np.random.normal(loc=0.0, scale=sigma, size=(101, 101))
+    def affichage_3D(self):
+        cmap = cmocean.cm.tarn
 
-        mnt_bruite = self.mnt + bruit_blanc
+        # Dimensions de l'image à afficher
+        x_mnt = np.arange(self.mnt.shape[1])
+        y_mnt = np.arange(self.mnt.shape[0])
+        X_MNT, Y_MNT = np.meshgrid(x_mnt, y_mnt)
 
+        fx, fy = self.TPP(self.mnt)
+        exposition = self.exposition(fx, fy)
+        exposition = np.where(np.isnan(exposition), 0, exposition)
+
+        # Normaliser les expositions pour définir la palette
+        norm_exposition = Normalize(vmin=np.nanmin(exposition), vmax=np.nanmax(exposition))
+        my_col = cmap(norm_exposition(exposition))
+        # Illumination pour le modèle
+        ls = LightSource(azdeg=-45, altdeg=35)
+
+        # Figure 3D
+        fig, axe = plt.subplots(figsize=(8, 8), subplot_kw={"projection": "3d"})
+        # Choix du point de vue
+        axe.view_init(elev=35., azim=15)
+        # Afficher la surface avec illumination
+        # Augmenter les valeurs rstride et cstride pour accélérer l'affichage
+        surf = axe.plot_surface(X_MNT, Y_MNT, self.mnt, facecolors=my_col, linewidth=0, antialiased=False, rstride=1,
+                                cstride=1)
+        m = cm.ScalarMappable(cmap=cmap, norm=norm_exposition)
+
+        plt.title(self.name)
+        plt.colorbar(m, label='exposition[°]', ax=axe, shrink=.8)
+        plt.tight_layout()
+        plt.show()
+
+    def affichage_comparaison_exposition_theorique(self):
         fx, fy = self.deriv_terrain_theorique(self.name)
         exposition_reel = self.exposition(fx, fy)
-        fx, fy = self.TPP(mnt_bruite)
+        fx, fy = self.TPP(self.mnt)
         exposition_tpp = self.exposition(fx, fy)
-        fx, fy = self.FCN(mnt_bruite)
+        fx, fy = self.FCN(self.mnt)
         exposition_fcn = self.exposition(fx, fy)
-        fx, fy = self.Evans(mnt_bruite)
+        fx, fy = self.Evans(self.mnt)
         exposition_evans = self.exposition(fx, fy)
 
         erreur_tpp = exposition_tpp - exposition_reel
@@ -232,9 +256,9 @@ class Exposition():
         ecart_type_fcn = np.nanstd(erreur_fcn)
         ecart_type_evans = np.nanstd(erreur_evans)
 
-        print(f'TPP (σ = {sigma}) : \n\t - moyenne : {moyenne_tpp} \n\t - ecart type : {ecart_type_tpp}')
-        print(f'FCN (σ = {sigma}) : \n\t - moyenne : {moyenne_fcn} \n\t - ecart type : {ecart_type_fcn}')
-        print(f'Evans (σ = {sigma}) : \n\t - moyenne : {moyenne_evans} \n\t - ecart type : {ecart_type_evans}')
+        print(f'TPP : \n\t - moyenne : {moyenne_tpp} \n\t - ecart type : {ecart_type_tpp}')
+        print(f'FCN : \n\t - moyenne : {moyenne_fcn} \n\t - ecart type : {ecart_type_fcn}')
+        print(f'Evans : \n\t - moyenne : {moyenne_evans} \n\t - ecart type : {ecart_type_evans}')
 
         normalize3 = CenteredNorm(0)
 
@@ -261,7 +285,7 @@ class Exposition():
         cax = divider.append_axes("right", size="5%", pad=0.05)
         plt.colorbar(im, label='Erreur[°]', cax=cax)
 
-        plt.suptitle(f'Normalisation partagée. σ = {sigma}')
+        plt.suptitle(f'Normalisation partagée.')
         plt.show()
 
         # Diagrammes croisés
@@ -291,12 +315,7 @@ class Exposition():
         plt.suptitle('Ecarts entre méthodes')
         plt.show()
 
-    def affichage_differences_exposition_reel(self):
-        """
-        Affiche les différences de expositions
-        :param sigma: bruit blanc (unsigned int)
-        :return:
-        """
+    def affichage_comparaison_exposition_reel(self):
         fx, fy = self.TPP(self.mnt)
         exposition_tpp = self.exposition(fx, fy)
         fx, fy = self.FCN(self.mnt)
@@ -373,90 +392,4 @@ class Exposition():
         ax[2].legend()
 
         plt.suptitle('Ecarts entre méthodes')
-        plt.show()
-
-    def affichage_incertitude_monte_carlo(self, sigma, N):
-        moyenne_exposition_TPP, ecart_type_exposition_TPP, moyenne_exposition_FCN, ecart_type_exposition_FCN, moyenne_exposition_Evans, ecart_type_exposition_Evans = self.calcul_incertitudes_modele(sigma, N)
-
-        print(
-            f'TPP (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_exposition_TPP} \n\t - ecart type : {ecart_type_exposition_TPP}')
-        print(
-            f'FCN (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_exposition_FCN} \n\t - ecart type : {ecart_type_exposition_FCN}')
-        print(
-            f'Evans (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_exposition_Evans} \n\t - ecart type : {ecart_type_exposition_Evans}')
-
-    def affichage_incertitudes_modele_artificiel_fonction_ecart_type(self, list_sigma, N):
-        moy_TPP = np.zeros(len(list_sigma))
-        std_TPP = np.zeros(len(list_sigma))
-        moy_FCN = np.zeros(len(list_sigma))
-        std_FCN = np.zeros(len(list_sigma))
-        moy_Evans = np.zeros(len(list_sigma))
-        std_Evans = np.zeros(len(list_sigma))
-
-        for i, sigma in enumerate(list_sigma):
-            moyenne_exposition_TPP, ecart_type_exposition_TPP, moyenne_exposition_FCN, ecart_type_exposition_FCN, moyenne_exposition_Evans, ecart_type_exposition_Evans = self.calcul_incertitudes_modele(sigma, N)
-            moy_TPP[i] = moyenne_exposition_TPP
-            std_TPP[i] = ecart_type_exposition_TPP
-            moy_FCN[i] = moyenne_exposition_FCN
-            std_FCN[i] = ecart_type_exposition_FCN
-            moy_Evans[i] = moyenne_exposition_Evans
-            std_Evans[i] = ecart_type_exposition_Evans
-
-        fig, ax = plt.subplots(1, 2, figsize=(12, 5))
-
-        ax[0].plot(list_sigma, moy_TPP, label='TPP')
-        ax[0].plot(list_sigma, moy_FCN, label='FCN')
-        ax[0].plot(list_sigma, moy_Evans, label='Evans')
-        ax[0].set_title(f'Moyenne pour N = {N}, σ dans [{list_sigma[0]}, {list_sigma[-1]}]')
-        ax[0].legend()
-
-        ax[1].plot(list_sigma, std_TPP, label='TPP')
-        ax[1].plot(list_sigma, std_FCN, label='FCN')
-        ax[1].plot(list_sigma, std_Evans, label='Evans')
-        ax[1].set_title(f'Ecart-type pour N = {N}, σ dans [{list_sigma[0]}, {list_sigma[-1]}]')
-        ax[1].legend()
-
-        plt.show()
-
-    def affichage_incertitudes_terrain_reel(self, incertitude):
-        moyenne_exposition_TPP, ecart_type_exposition_TPP, moyenne_exposition_FCN, ecart_type_exposition_FCN, moyenne_exposition_Evans, ecart_type_exposition_Evans = self.calcul_incertitudes_terrain_reel(incertitude)
-
-        print(
-            f'TPP : \n\t - moyenne : {moyenne_exposition_TPP} \n\t - ecart type : {ecart_type_exposition_TPP}')
-        print(
-            f'FCN : \n\t - moyenne : {moyenne_exposition_FCN} \n\t - ecart type : {ecart_type_exposition_FCN}')
-        print(
-            f'Evans : \n\t - moyenne : {moyenne_exposition_Evans} \n\t - ecart type : {ecart_type_exposition_Evans}')
-
-    def affichage_3D(self):
-        cmap = cmocean.cm.tarn
-
-        # Dimensions de l'image à afficher
-        x_mnt = np.arange(self.mnt.shape[1])
-        y_mnt = np.arange(self.mnt.shape[0])
-        X_MNT, Y_MNT = np.meshgrid(x_mnt, y_mnt)
-
-        fx, fy = self.TPP(self.mnt)
-        exposition = self.exposition(fx, fy)
-        exposition = np.where(np.isnan(exposition), 0, exposition)
-
-        # Normaliser les expositions pour définir la palette
-        norm_exposition = Normalize(vmin=np.nanmin(exposition), vmax=np.nanmax(exposition))
-        my_col = cmap(norm_exposition(exposition))
-        # Illumination pour le modèle
-        ls = LightSource(azdeg=-45, altdeg=35)
-
-        # Figure 3D
-        fig, axe = plt.subplots(figsize=(8, 8), subplot_kw={"projection": "3d"})
-        # Choix du point de vue
-        axe.view_init(elev=35., azim=15)
-        # Afficher la surface avec illumination
-        # Augmenter les valeurs rstride et cstride pour accélérer l'affichage
-        surf = axe.plot_surface(X_MNT, Y_MNT, self.mnt, facecolors=my_col, linewidth=0, antialiased=False, rstride=1,
-                                cstride=1)
-        m = cm.ScalarMappable(cmap=cmap, norm=norm_exposition)
-
-        plt.title(self.name)
-        plt.colorbar(m, label='exposition[°]', ax=axe, shrink=.8)
-        plt.tight_layout()
         plt.show()

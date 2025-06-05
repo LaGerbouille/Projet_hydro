@@ -19,7 +19,7 @@ class Pente():
     # -------------------------------------------------- CALCULS ------------------------------------------------------
     def TPP(self, mnt):
         fx = convolve(mnt, np.array([[0, 0, 0], [0, -1, 1], [0, 0, 0]]) / self.pas, mode='constant', cval=np.nan)
-        fy = convolve(mnt, np.array([[0, 0, 0], [0, -1, 0], [0, 1, 0]]) / self.pas, mode='constant', cval=np.nan)
+        fy = convolve(mnt, np.array([[0, 0, 0], [0, 1, 0], [0, -1, 0]]) / self.pas, mode='constant', cval=np.nan)
 
         return fx, fy
 
@@ -58,9 +58,10 @@ class Pente():
 
         return fx, fy
 
-    def calcul_incertitudes_modele(self, sigma, N):
+    def calcul_incertitudes_modele_theorique(self, sigma, N):
         w, h = self.mnt.shape
         pentes = np.zeros((3, N, w, h))
+
         for methode in range(3):
             for i in range(N):
                 bruit_blanc = np.random.normal(loc=0.0, scale=sigma, size=(w, h))
@@ -76,41 +77,41 @@ class Pente():
                 pentes[methode, i] = self.pente(fx, fy)
 
         moyenne_pente_TPP = np.nanmean(np.nanmean(pentes[0], axis=0))
-        ecart_type_pente_TPP = np.nanstd(np.nanstd(pentes[0], axis=0))
+        ecart_type_pente_TPP = np.nanmean(np.nanstd(pentes[0], axis=0))
 
         moyenne_pente_FCN = np.nanmean(np.nanmean(pentes[1], axis=0))
-        ecart_type_pente_FCN = np.nanstd(np.nanstd(pentes[1], axis=0))
+        ecart_type_pente_FCN = np.nanmean(np.nanstd(pentes[1], axis=0))
 
         moyenne_pente_Evans = np.nanmean(np.nanmean(pentes[2], axis=0))
-        ecart_type_pente_Evans = np.nanstd(np.nanstd(pentes[2], axis=0))
+        ecart_type_pente_Evans = np.nanmean(np.nanstd(pentes[2], axis=0))
 
         return [moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans]
 
-    def calcul_incertitudes_terrain_reel(self, incertitude):
-        bruit_blanc = np.random.normal(loc=0.0, scale=incertitude)
-        mnt_bruite = self.mnt + bruit_blanc
-
-        pentes = np.zeros((3, mnt_bruite.shape[0], mnt_bruite.shape[1]))
+    def calcul_incertitudes_terrain_reel(self, incertitude, N):
+        pentes = np.zeros((3, N, incertitude.shape[0], incertitude.shape[1]))
 
         for methode in range(3):
-            fx, fy = 0, 0
-            if methode == 0:
-                fx, fy = self.TPP(mnt_bruite)
-            elif methode == 1:
-                fx, fy = self.FCN(mnt_bruite)
-            elif methode == 2:
-                fx, fy = self.Evans(mnt_bruite)
+            for i in range(N):
+                bruit_blanc = np.random.normal(loc=0.0, scale=incertitude)
+                mnt_bruite = self.mnt + bruit_blanc
+                fx, fy = 0, 0
+                if methode == 0:
+                    fx, fy = self.TPP(mnt_bruite)
+                elif methode == 1:
+                    fx, fy = self.FCN(mnt_bruite)
+                elif methode == 2:
+                    fx, fy = self.Evans(mnt_bruite)
 
-            pentes[methode] = self.pente(fx, fy)
+                pentes[methode, i] = self.pente(fx, fy)
 
         moyenne_pente_TPP = np.nanmean(np.nanmean(pentes[0], axis=0))
-        ecart_type_pente_TPP = np.nanstd(np.nanstd(pentes[0], axis=0))
+        ecart_type_pente_TPP = np.nanmean(np.nanstd(pentes[0], axis=0))
 
         moyenne_pente_FCN = np.nanmean(np.nanmean(pentes[1], axis=0))
-        ecart_type_pente_FCN = np.nanstd(np.nanstd(pentes[1], axis=0))
+        ecart_type_pente_FCN = np.nanmean(np.nanstd(pentes[1], axis=0))
 
         moyenne_pente_Evans = np.nanmean(np.nanmean(pentes[2], axis=0))
-        ecart_type_pente_Evans = np.nanstd(np.nanstd(pentes[2], axis=0))
+        ecart_type_pente_Evans = np.nanmean(np.nanstd(pentes[2], axis=0))
 
         return [moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans]
 
@@ -137,7 +138,7 @@ class Pente():
         Xhat = la.lstsq(M, zi, rcond=None)[0].flatten()
         D = Xhat[3]
         E = Xhat[4]
-        return self.pente(D, E)
+        return self.pente(E, -D)
 
     def scatter_pente(self, pente_x, pente_y):
         # Aplatir et retirer les NaN
@@ -150,6 +151,7 @@ class Pente():
         return x, y
 
     # ---------------------------------------------------- AFFICHAGE --------------------------------------------------
+    #Q2
     def affichage_pente(self):
         fx, fy = self.TPP(self.mnt)
         pente_tpp = self.pente(fx, fy)
@@ -200,23 +202,49 @@ class Pente():
         plt.tight_layout()
         plt.show()
 
-    def affichage_differences_pente_theorique(self, sigma=3):
-        """
-        Affiche les différences de pentes
-        :param sigma: bruit blanc (unsigned int)
-        :return:
-        """
-        bruit_blanc = np.random.normal(loc=0.0, scale=sigma, size=(101, 101))
+    #Q3
+    def affichage_3D(self):
+        cmap = cmocean.cm.tarn
 
-        mnt_bruite = self.mnt + bruit_blanc
+        # Dimensions de l'image à afficher
+        x_mnt = np.arange(self.mnt.shape[1])
+        y_mnt = np.arange(self.mnt.shape[0])
+        X_MNT, Y_MNT = np.meshgrid(x_mnt, y_mnt)
 
+        fx, fy = self.TPP(self.mnt)
+        pente = self.pente(fx, fy)
+        pente = np.where(np.isnan(pente), 0, pente)
+
+        # Normaliser les pentes pour définir la palette
+        norm_pente = Normalize(vmin=np.nanmin(pente), vmax=np.nanmax(pente))
+        my_col = cmap(norm_pente(pente))
+        # Illumination pour le modèle
+        ls = LightSource(azdeg=-45, altdeg=35)
+
+        # Figure 3D
+        fig, axe = plt.subplots(figsize=(8, 8), subplot_kw={"projection": "3d"})
+        # Choix du point de vue
+        axe.view_init(elev=35., azim=15)
+        # Afficher la surface avec illumination
+        # Augmenter les valeurs rstride et cstride pour accélérer l'affichage
+        surf = axe.plot_surface(X_MNT, Y_MNT, self.mnt, facecolors=my_col, linewidth=0, antialiased=False, rstride=1,
+                                cstride=1)
+        m = cm.ScalarMappable(cmap=cmap, norm=norm_pente)
+
+        plt.title(self.name)
+        plt.colorbar(m, label='Pente[°]', ax=axe, shrink=.8)
+        plt.tight_layout()
+        plt.show()
+
+    #Q4
+    def affichage_comparaison_pente_theorique(self):
         fx, fy = self.deriv_terrain_theorique(self.name)
         pente_reel = self.pente(fx, fy)
-        fx, fy = self.TPP(mnt_bruite)
+        fx, fy = self.TPP(self.mnt)
         pente_tpp = self.pente(fx, fy)
-        fx, fy = self.FCN(mnt_bruite)
+        fx, fy = self.FCN(self.mnt)
         pente_fcn = self.pente(fx, fy)
-        fx, fy = self.Evans(mnt_bruite)
+        fx, fy = self.Evans(self.mnt)
         pente_evans = self.pente(fx, fy)
 
         erreur_tpp = pente_tpp - pente_reel
@@ -231,9 +259,9 @@ class Pente():
         ecart_type_fcn = np.nanstd(erreur_fcn)
         ecart_type_evans = np.nanstd(erreur_evans)
 
-        print(f'TPP (σ = {sigma}) : \n\t - moyenne : {moyenne_tpp} \n\t - ecart type : {ecart_type_tpp}')
-        print(f'FCN (σ = {sigma}) : \n\t - moyenne : {moyenne_fcn} \n\t - ecart type : {ecart_type_fcn}')
-        print(f'Evans (σ = {sigma}) : \n\t - moyenne : {moyenne_evans} \n\t - ecart type : {ecart_type_evans}')
+        print(f'TPP : \n\t - moyenne : {moyenne_tpp} \n\t - ecart type : {ecart_type_tpp}')
+        print(f'FCN : \n\t - moyenne : {moyenne_fcn} \n\t - ecart type : {ecart_type_fcn}')
+        print(f'Evans : \n\t - moyenne : {moyenne_evans} \n\t - ecart type : {ecart_type_evans}')
 
         normalize3 = CenteredNorm(0)
 
@@ -260,7 +288,7 @@ class Pente():
         cax = divider.append_axes("right", size="5%", pad=0.05)
         plt.colorbar(im, label='Erreur[°]', cax=cax)
 
-        plt.suptitle(f'Normalisation partagée. σ = {sigma}')
+        plt.suptitle(f'Normalisation partagée. Comparaison des méthodes de calcul de pente.')
         plt.show()
 
         # Diagrammes croisés
@@ -290,7 +318,7 @@ class Pente():
         plt.suptitle('Ecarts entre méthodes')
         plt.show()
 
-    def affichage_differences_pente_reel(self):
+    def affichage_comparaison_pente_reel(self):
         """
         Affiche les différences de pentes
         :param sigma: bruit blanc (unsigned int)
@@ -374,16 +402,7 @@ class Pente():
         plt.suptitle('Ecarts entre méthodes')
         plt.show()
 
-    def affichage_incertitude_monte_carlo(self, sigma, N):
-        moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans = self.calcul_incertitudes_modele(sigma, N)
-
-        print(
-            f'TPP (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_TPP} \n\t - ecart type : {ecart_type_pente_TPP}')
-        print(
-            f'FCN (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_FCN} \n\t - ecart type : {ecart_type_pente_FCN}')
-        print(
-            f'Evans (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_Evans} \n\t - ecart type : {ecart_type_pente_Evans}')
-
+    #Q5
     def affichage_incertitudes_modele_artificiel_fonction_ecart_type(self, list_sigma, N):
         moy_TPP = np.zeros(len(list_sigma))
         std_TPP = np.zeros(len(list_sigma))
@@ -393,7 +412,7 @@ class Pente():
         std_Evans = np.zeros(len(list_sigma))
 
         for i, sigma in enumerate(list_sigma):
-            moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans = self.calcul_incertitudes_modele(sigma, N)
+            moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans = self.calcul_incertitudes_modele_theorique(sigma, N)
             moy_TPP[i] = moyenne_pente_TPP
             std_TPP[i] = ecart_type_pente_TPP
             moy_FCN[i] = moyenne_pente_FCN
@@ -417,8 +436,8 @@ class Pente():
 
         plt.show()
 
-    def affichage_incertitudes_terrain_reel(self, incertitude):
-        moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans = self.calcul_incertitudes_terrain_reel(incertitude)
+    def affichage_incertitudes_terrain_reel(self, incertitude, N):
+        moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans = self.calcul_incertitudes_terrain_reel(incertitude, N)
 
         print(
             f'TPP : \n\t - moyenne : {moyenne_pente_TPP} \n\t - ecart type : {ecart_type_pente_TPP}')
@@ -427,35 +446,13 @@ class Pente():
         print(
             f'Evans : \n\t - moyenne : {moyenne_pente_Evans} \n\t - ecart type : {ecart_type_pente_Evans}')
 
-    def affichage_3D(self):
-        cmap = cmocean.cm.tarn
+    #Q6
+    def affichage_incertitude_monte_carlo(self, sigma, N):
+        moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans = self.calcul_incertitudes_modele_theorique(sigma, N)
 
-        # Dimensions de l'image à afficher
-        x_mnt = np.arange(self.mnt.shape[1])
-        y_mnt = np.arange(self.mnt.shape[0])
-        X_MNT, Y_MNT = np.meshgrid(x_mnt, y_mnt)
-
-        fx, fy = self.TPP(self.mnt)
-        pente = self.pente(fx, fy)
-        pente = np.where(np.isnan(pente), 0, pente)
-
-        # Normaliser les pentes pour définir la palette
-        norm_pente = Normalize(vmin=np.nanmin(pente), vmax=np.nanmax(pente))
-        my_col = cmap(norm_pente(pente))
-        # Illumination pour le modèle
-        ls = LightSource(azdeg=-45, altdeg=35)
-
-        # Figure 3D
-        fig, axe = plt.subplots(figsize=(8, 8), subplot_kw={"projection": "3d"})
-        # Choix du point de vue
-        axe.view_init(elev=35., azim=15)
-        # Afficher la surface avec illumination
-        # Augmenter les valeurs rstride et cstride pour accélérer l'affichage
-        surf = axe.plot_surface(X_MNT, Y_MNT, self.mnt, facecolors=my_col, linewidth=0, antialiased=False, rstride=1,
-                                cstride=1)
-        m = cm.ScalarMappable(cmap=cmap, norm=norm_pente)
-
-        plt.title(self.name)
-        plt.colorbar(m, label='Pente[°]', ax=axe, shrink=.8)
-        plt.tight_layout()
-        plt.show()
+        print(
+            f'TPP (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_TPP} \n\t - ecart type : {ecart_type_pente_TPP}')
+        print(
+            f'FCN (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_FCN} \n\t - ecart type : {ecart_type_pente_FCN}')
+        print(
+            f'Evans (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_Evans} \n\t - ecart type : {ecart_type_pente_Evans}')
