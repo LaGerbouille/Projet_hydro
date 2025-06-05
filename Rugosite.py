@@ -4,13 +4,16 @@ from scipy.ndimage import generic_filter
 from scipy.ndimage import convolve
 from Pente import Pente
 from scipy.ndimage import gaussian_filter
+from Exposition import*
 
 class Rugosite():
     def __init__(self, mnt, pas, name):
         self.mnt = mnt
         self.pas = pas
         self.name = name
-
+        self.pente_obj = Pente(mnt, pas, name)
+        self.exposition_obj = Exposition(mnt, pas, name)
+        
     def rug_ecart_type(self, n):
         # à ne pas utiliser pour calculer la rugosité 3*3,5*5,7*7 ... car cette méthode demande bcp trop de temps de calcul
         print('je suis au debut de rug_ecart_type')
@@ -66,29 +69,32 @@ class Rugosite():
 
         plt.show()
 
-    def vecteurs_normaux(self, Pente):
+    def vecteurs_normaux(self):
 
-        fx, fy = Pente.Evans(Pente.mnt)
+        fx, fy = self.pente_obj.Evans(self.mnt)
+        
+        pente_tab = self.pente_obj.pente(fx,fy)
 
-        pente = Pente.pente(fx,fy)
+        exposition_tab = self.exposition_obj.exposition(fx,fy)
 
-        exposition = Pente.exposition(fx, fy)
+        x_i = np.sin(np.radians(pente_tab)) * np.cos(np.radians(exposition_tab))
 
-        x_i = np.sin(np.radians(pente)) * np.cos(np.radians(exposition))
+        y_i = np.sin(np.radians(pente_tab)) * np.sin(np.radians(exposition_tab))
 
-        y_i = np.sin(np.radians(pente)) * np.sin(np.radians(exposition))
-
-        z_i = np.cos(np.radians(pente))
+        z_i = np.cos(np.radians(pente_tab))
 
         return x_i, y_i, z_i
 
     
     def sommes_vecteurs_normaux(self,n):
-
-        x_i, y_i, z_i = self.vecteurs_normaux(Pente(self.mnt, self.pas, self.name))
+        
+        x_i, y_i, z_i = self.vecteurs_normaux()
 
         noyau = np.ones((n, n)) / (n**2)
-    
+        print('noyau', noyau)
+        print('x_i', x_i)
+        print('y_i', y_i)
+        print('z_i', z_i)
         x_somme = convolve(x_i, noyau, mode='constant', cval=np.nan)
 
         y_somme = convolve(y_i, noyau, mode='constant', cval=np.nan)
@@ -116,7 +122,7 @@ class Rugosite():
         plt.colorbar(label='Rugosité')
         plt.show()
     
-    def rugosite_gaussienne(self, n , p):
+    def rugosite_gaussienne(self, n , p):# n corrrespond a la taille du noyeau gaussien et p a la taille du noyeau de la convolution poiur calculer la rugosite
 
         mnt_lisse = gaussian_filter(self.mnt, sigma=n)
 
@@ -132,3 +138,4 @@ class Rugosite():
         plt.title(f'Rugosité gaussienne de {self.name} avec sigma={n}')
         plt.colorbar(label='Rugosité')
         plt.show()
+        

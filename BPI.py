@@ -44,7 +44,7 @@ class BPI():
 
     def affichage_bpi_cercle(self,r):
         plt.figure()
-        plt.imshow(self.bpi_cercle(r), origin='upper', cmap='bwr',norm=CenteredNorm(0,halfrange=0.1))
+        plt.imshow(self.bpi_cercle(r), origin='lower', cmap='bwr',norm=CenteredNorm(0,halfrange=0.1))
         plt.title(f'BPI cercle de {self.name}')
         plt.colorbar(label='BPI')
         plt.show()
@@ -52,7 +52,7 @@ class BPI():
     def affichage_bpi_carre(self,n):
 
         plt.figure()
-        plt.imshow(self.bpi_carre(n), origin='upper', cmap='bwr',norm=CenteredNorm(0,halfrange=0.1))
+        plt.imshow(self.bpi_carre(n), origin='lower', cmap='bwr',norm=CenteredNorm(0,halfrange=0.1))
         plt.title(f'BPI de {self.name}')
         plt.colorbar(label='BPI')
         plt.show()
