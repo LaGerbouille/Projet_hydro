@@ -389,6 +389,7 @@ class Pente():
 
         plt.show()
 
+
     def affichage_exposition(self):
         fx, fy = self.TPP(self.mnt)
         exposition_tpp = self.exposition(fx, fy)
