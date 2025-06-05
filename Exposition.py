@@ -10,7 +10,7 @@ from scipy.ndimage import convolve, generic_filter
 import cmocean
 
 
-class Pente():
+class exposition():
     def __init__(self, mnt, pas, name):
         self.mnt = mnt
         self.pas = pas
@@ -35,8 +35,8 @@ class Pente():
 
         return fx, fy
 
-    def pente(self, fx, fy):
-        return np.degrees(np.arctan(np.sqrt(fx ** 2 + fy ** 2)))
+    def exposition(self, fx, fy):
+        return np.degrees(np.arctan2(-fx, -fy))
 
     def deriv_terrain_theorique(self, name):
         x = np.arange(0, 101)
@@ -60,7 +60,7 @@ class Pente():
 
     def calcul_incertitudes(self, sigma, N):
         w, h = self.mnt.shape
-        pentes = np.zeros((3, N, w, h))
+        expositions = np.zeros((3, N, w, h))
         for methode in range(3):
             for i in range(N):
                 bruit_blanc = np.random.normal(loc=0.0, scale=sigma, size=(w, h))
@@ -73,18 +73,18 @@ class Pente():
                 elif methode == 2:
                     fx, fy = self.Evans(mnt_bruite)
 
-                pentes[methode, i] = self.pente(fx, fy)
+                expositions[methode, i] = self.exposition(fx, fy)
 
-        moyenne_pente_TPP = np.nanmean(np.nanmean(pentes[0], axis=0))
-        ecart_type_pente_TPP = np.nanstd(np.nanstd(pentes[0], axis=0))
+        moyenne_exposition_TPP = np.nanmean(np.nanmean(expositions[0], axis=0))
+        ecart_type_exposition_TPP = np.nanstd(np.nanstd(expositions[0], axis=0))
 
-        moyenne_pente_FCN = np.nanmean(np.nanmean(pentes[1], axis=0))
-        ecart_type_pente_FCN = np.nanstd(np.nanstd(pentes[1], axis=0))
+        moyenne_exposition_FCN = np.nanmean(np.nanmean(expositions[1], axis=0))
+        ecart_type_exposition_FCN = np.nanstd(np.nanstd(expositions[1], axis=0))
 
-        moyenne_pente_Evans = np.nanmean(np.nanmean(pentes[2], axis=0))
-        ecart_type_pente_Evans = np.nanstd(np.nanstd(pentes[2], axis=0))
+        moyenne_exposition_Evans = np.nanmean(np.nanmean(expositions[2], axis=0))
+        ecart_type_exposition_Evans = np.nanstd(np.nanstd(expositions[2], axis=0))
 
-        return [moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans]
+        return [moyenne_exposition_TPP, ecart_type_exposition_TPP, moyenne_exposition_FCN, ecart_type_exposition_FCN, moyenne_exposition_Evans, ecart_type_exposition_Evans]
 
     def coords_grille(self, r):
         """Retourne les coordonnées xi, yi d'une grille carrée centrée en (0,0)"""
@@ -111,10 +111,10 @@ class Pente():
         E = Xhat[4]
         return np.degrees(np.arctan(np.sqrt(D ** 2 + E ** 2)))
 
-    def scatter_pente(self, pente_x, pente_y):
+    def scatter_exposition(self, exposition_x, exposition_y):
         # Aplatir et retirer les NaN
-        x = pente_x.flatten()
-        y = pente_y.flatten()
+        x = exposition_x.flatten()
+        y = exposition_y.flatten()
         mask = ~np.isnan(x) & ~np.isnan(y)
         x = x[mask]
         y = y[mask]
@@ -122,47 +122,47 @@ class Pente():
         return x, y
 
     # ---------------------------------------------------- AFFICHAGE --------------------------------------------------
-    def affichage_pente(self):
+    def affichage_exposition(self):
         fx, fy = self.TPP(self.mnt)
-        pente_tpp = self.pente(fx, fy)
+        exposition_tpp = self.exposition(fx, fy)
         fx, fy = self.FCN(self.mnt)
-        pente_fcn = self.pente(fx, fy)
+        exposition_fcn = self.exposition(fx, fy)
         fx, fy = self.Evans(self.mnt)
-        pente_evans = self.pente(fx, fy)
+        exposition_evans = self.exposition(fx, fy)
 
-        pente_moindres_carres = self.moindres_carres(3)
-        diff = self.moindres_carres(3) - pente_evans
+        exposition_moindres_carres = self.moindres_carres(3)
+        diff = self.moindres_carres(3) - exposition_evans
         diff[np.isnan(diff) | (diff < 1e-10)] = 0
 
         print("Différence méthodes Moindres carrés - Evans. Grille 3 x 3 : ", diff)
 
-        cmap = 'cividis_r'
+        cmap = 'twilight_shifted'
 
         fig, ax = plt.subplots(1, 4, figsize=(12, 5))
 
-        im = ax[0].imshow(pente_tpp, origin='lower', cmap=cmap)
+        im = ax[0].imshow(exposition_tpp, origin='lower', cmap=cmap)
         ax[0].set_title('TPP')
         divider = make_axes_locatable(ax[0])
         cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Pente[°]', cax=cax)
+        plt.colorbar(im, label='exposition[°]', cax=cax)
 
-        im = ax[1].imshow(pente_fcn, origin='lower', cmap=cmap)
+        im = ax[1].imshow(exposition_fcn, origin='lower', cmap=cmap)
         ax[1].set_title('FCN')
         divider = make_axes_locatable(ax[1])
         cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Pente[°]', cax=cax)
+        plt.colorbar(im, label='exposition[°]', cax=cax)
 
-        im = ax[2].imshow(pente_evans, origin='lower', cmap=cmap)
+        im = ax[2].imshow(exposition_evans, origin='lower', cmap=cmap)
         ax[2].set_title('Evans')
         divider = make_axes_locatable(ax[2])
         cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Pente[°]', cax=cax)
+        plt.colorbar(im, label='exposition[°]', cax=cax)
 
-        im = ax[3].imshow(pente_moindres_carres, origin='lower', cmap=cmap)
+        im = ax[3].imshow(exposition_moindres_carres, origin='lower', cmap=cmap)
         ax[3].set_title('Moindres carres')
         divider = make_axes_locatable(ax[3])
         cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Pente[°]', cax=cax)
+        plt.colorbar(im, label='exposition[°]', cax=cax)
 
         for a in ax:
             a.set_xlabel("X")
@@ -172,9 +172,9 @@ class Pente():
         plt.tight_layout()
         plt.show()
 
-    def affichage_differences_pente_theorique(self, sigma=3):
+    def affichage_differences_exposition_theorique(self, sigma=3):
         """
-        Affiche les différences de pentes
+        Affiche les différences de expositions
         :param sigma: bruit blanc (unsigned int)
         :return:
         """
@@ -183,17 +183,17 @@ class Pente():
         mnt_bruite = self.mnt + bruit_blanc
 
         fx, fy = self.deriv_terrain_theorique(self.name)
-        pente_reel = self.pente(fx, fy)
+        exposition_reel = self.exposition(fx, fy)
         fx, fy = self.TPP(mnt_bruite)
-        pente_tpp = self.pente(fx, fy)
+        exposition_tpp = self.exposition(fx, fy)
         fx, fy = self.FCN(mnt_bruite)
-        pente_fcn = self.pente(fx, fy)
+        exposition_fcn = self.exposition(fx, fy)
         fx, fy = self.Evans(mnt_bruite)
-        pente_evans = self.pente(fx, fy)
+        exposition_evans = self.exposition(fx, fy)
 
-        erreur_tpp = pente_tpp - pente_reel
-        erreur_fcn = pente_fcn - pente_reel
-        erreur_evans = pente_evans - pente_reel
+        erreur_tpp = exposition_tpp - exposition_reel
+        erreur_fcn = exposition_fcn - exposition_reel
+        erreur_evans = exposition_evans - exposition_reel
 
         moyenne_tpp = np.nanmean(erreur_tpp)
         moyenne_fcn = np.nanmean(erreur_fcn)
@@ -238,23 +238,23 @@ class Pente():
         # Diagrammes croisés
         fig, ax = plt.subplots(1, 3, figsize=(12, 5))
 
-        x, y = self.scatter_pente(pente_tpp, pente_fcn)
+        x, y = self.scatter_exposition(exposition_tpp, exposition_fcn)
 
-        ax[0].set_title("Pente TPP vs FCN")
+        ax[0].set_title("exposition TPP vs FCN")
         ax[0].scatter(x, y, s=5, alpha=0.5, c='blue', edgecolors='none')
         ax[0].plot([x.min(), x.max()], [x.min(), x.max()], 'r--', label='y = x')  # ligne diagonale
         ax[0].legend()
 
-        x, y = self.scatter_pente(pente_fcn, pente_evans)
+        x, y = self.scatter_exposition(exposition_fcn, exposition_evans)
 
-        ax[1].set_title("Pente FCN vs Evans")
+        ax[1].set_title("exposition FCN vs Evans")
         ax[1].scatter(x, y, s=5, alpha=0.5, c='blue', edgecolors='none')
         ax[1].plot([x.min(), x.max()], [x.min(), x.max()], 'r--', label='y = x')  # ligne diagonale
         ax[1].legend()
 
-        x, y = self.scatter_pente(pente_evans, pente_tpp)
+        x, y = self.scatter_exposition(exposition_evans, exposition_tpp)
 
-        ax[2].set_title("Pente Evans vs TPP")
+        ax[2].set_title("exposition Evans vs TPP")
         ax[2].scatter(x, y, s=5, alpha=0.5, c='blue', edgecolors='none')
         ax[2].plot([x.min(), x.max()], [x.min(), x.max()], 'r--', label='y = x')  # ligne diagonale
         ax[2].legend()
@@ -262,22 +262,22 @@ class Pente():
         plt.suptitle('Ecarts entre méthodes')
         plt.show()
 
-    def affichage_differences_pente_reel(self):
+    def affichage_differences_exposition_reel(self):
         """
-        Affiche les différences de pentes
+        Affiche les différences de expositions
         :param sigma: bruit blanc (unsigned int)
         :return:
         """
         fx, fy = self.TPP(self.mnt)
-        pente_tpp = self.pente(fx, fy)
+        exposition_tpp = self.exposition(fx, fy)
         fx, fy = self.FCN(self.mnt)
-        pente_fcn = self.pente(fx, fy)
+        exposition_fcn = self.exposition(fx, fy)
         fx, fy = self.Evans(self.mnt)
-        pente_evans = self.pente(fx, fy)
+        exposition_evans = self.exposition(fx, fy)
 
-        erreur_tpp_fcn = pente_tpp - pente_fcn
-        erreur_fcn_evans = pente_fcn - pente_evans
-        erreur_evans_tpp = pente_evans - pente_tpp
+        erreur_tpp_fcn = exposition_tpp - exposition_fcn
+        erreur_fcn_evans = exposition_fcn - exposition_evans
+        erreur_evans_tpp = exposition_evans - exposition_tpp
 
         moyenne_tpp_fcn = np.nanmean(erreur_tpp_fcn)
         moyenne_fcn_evans = np.nanmean(erreur_fcn_evans)
@@ -322,23 +322,23 @@ class Pente():
         # Diagrammes croisés
         fig, ax = plt.subplots(1, 3, figsize=(12, 5))
 
-        x, y = self.scatter_pente(pente_tpp, pente_fcn)
+        x, y = self.scatter_exposition(exposition_tpp, exposition_fcn)
 
-        ax[0].set_title("Pente TPP vs FCN")
+        ax[0].set_title("exposition TPP vs FCN")
         ax[0].scatter(x, y, s=5, alpha=0.5, c='blue', edgecolors='none')
         ax[0].plot([x.min(), x.max()], [x.min(), x.max()], 'r--', label='y = x')  # ligne diagonale
         ax[0].legend()
 
-        x, y = self.scatter_pente(pente_fcn, pente_evans)
+        x, y = self.scatter_exposition(exposition_fcn, exposition_evans)
 
-        ax[1].set_title("Pente FCN vs Evans")
+        ax[1].set_title("exposition FCN vs Evans")
         ax[1].scatter(x, y, s=5, alpha=0.5, c='blue', edgecolors='none')
         ax[1].plot([x.min(), x.max()], [x.min(), x.max()], 'r--', label='y = x')  # ligne diagonale
         ax[1].legend()
 
-        x, y = self.scatter_pente(pente_evans, pente_tpp)
+        x, y = self.scatter_exposition(exposition_evans, exposition_tpp)
 
-        ax[2].set_title("Pente Evans vs TPP")
+        ax[2].set_title("exposition Evans vs TPP")
         ax[2].scatter(x, y, s=5, alpha=0.5, c='blue', edgecolors='none')
         ax[2].plot([x.min(), x.max()], [x.min(), x.max()], 'r--', label='y = x')  # ligne diagonale
         ax[2].legend()
@@ -347,11 +347,11 @@ class Pente():
         plt.show()
 
     def affichage_incertitude_monte_carlo(self, sigma, N):
-        moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans = self.calcul_incertitudes(sigma, N)
+        moyenne_exposition_TPP, ecart_type_exposition_TPP, moyenne_exposition_FCN, ecart_type_exposition_FCN, moyenne_exposition_Evans, ecart_type_exposition_Evans = self.calcul_incertitudes(sigma, N)
 
-        print(f'TPP (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_TPP} \n\t - ecart type : {ecart_type_pente_TPP}')
-        print(f'FCN (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_FCN} \n\t - ecart type : {ecart_type_pente_FCN}')
-        print(f'Evans (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_Evans} \n\t - ecart type : {ecart_type_pente_Evans}')
+        print(f'TPP (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_exposition_TPP} \n\t - ecart type : {ecart_type_exposition_TPP}')
+        print(f'FCN (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_exposition_FCN} \n\t - ecart type : {ecart_type_exposition_FCN}')
+        print(f'Evans (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_exposition_Evans} \n\t - ecart type : {ecart_type_exposition_Evans}')
 
     def affichage_incertitudes_modele_artificiel_fonction_ecart_type(self, list_sigma, N):
         moy_TPP = np.zeros(len(list_sigma))
@@ -362,13 +362,13 @@ class Pente():
         std_Evans = np.zeros(len(list_sigma))
 
         for i, sigma in enumerate(list_sigma):
-            moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans = self.calcul_incertitudes(sigma, N)
-            moy_TPP[i] = moyenne_pente_TPP
-            std_TPP[i] = ecart_type_pente_TPP
-            moy_FCN[i] = moyenne_pente_FCN
-            std_FCN[i] = ecart_type_pente_FCN
-            moy_Evans[i] = moyenne_pente_Evans
-            std_Evans[i] = ecart_type_pente_Evans
+            moyenne_exposition_TPP, ecart_type_exposition_TPP, moyenne_exposition_FCN, ecart_type_exposition_FCN, moyenne_exposition_Evans, ecart_type_exposition_Evans = self.calcul_incertitudes(sigma, N)
+            moy_TPP[i] = moyenne_exposition_TPP
+            std_TPP[i] = ecart_type_exposition_TPP
+            moy_FCN[i] = moyenne_exposition_FCN
+            std_FCN[i] = ecart_type_exposition_FCN
+            moy_Evans[i] = moyenne_exposition_Evans
+            std_Evans[i] = ecart_type_exposition_Evans
 
         fig, ax = plt.subplots(1, 2, figsize=(12, 5))
 
@@ -395,12 +395,12 @@ class Pente():
         X_MNT, Y_MNT = np.meshgrid(x_mnt, y_mnt)
 
         fx, fy = self.TPP(self.mnt)
-        pente = self.pente(fx, fy)
-        pente = np.where(np.isnan(pente), 0, pente)
+        exposition = self.exposition(fx, fy)
+        exposition = np.where(np.isnan(exposition), 0, exposition)
 
-        # Normaliser les pentes pour définir la palette
-        norm_pente = Normalize(vmin=np.nanmin(pente), vmax=np.nanmax(pente))
-        my_col = cmap(norm_pente(pente))
+        # Normaliser les expositions pour définir la palette
+        norm_exposition = Normalize(vmin=np.nanmin(exposition), vmax=np.nanmax(exposition))
+        my_col = cmap(norm_exposition(exposition))
         # Illumination pour le modèle
         ls = LightSource(azdeg=-45, altdeg=35)
 
@@ -412,9 +412,9 @@ class Pente():
         # Augmenter les valeurs rstride et cstride pour accélérer l'affichage
         surf = axe.plot_surface(X_MNT, Y_MNT, self.mnt, facecolors=my_col, linewidth=0, antialiased=False, rstride=1,
                                 cstride=1)
-        m = cm.ScalarMappable(cmap=cmap, norm=norm_pente)
+        m = cm.ScalarMappable(cmap=cmap, norm=norm_exposition)
 
         plt.title(self.name)
-        plt.colorbar(m, label='Pente[°]', ax=axe, shrink=.8)
+        plt.colorbar(m, label='exposition[°]', ax=axe, shrink=.8)
         plt.tight_layout()
         plt.show()
