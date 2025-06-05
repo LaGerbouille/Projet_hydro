@@ -36,7 +36,7 @@ def affiche_caracteristique_global():
         plt.show()
 
 if __name__ == '__main__':
-    fichier = "z_Zone1_8m.txt"
+    fichier = "bertheaume_z.txt"
     mnt = np.loadtxt("MNT/" + fichier)
     pas = 1
     name = fichier[:-4]
@@ -48,4 +48,9 @@ if __name__ == '__main__':
 
     # pente.affichage_incertitudes_fonction_ecart_type(np.arange(0, 7, 0.5), 1000)
 
-    pente.affiche_3D()
+    # bpi.affichage_bpi_carre(3)
+    # bpi.affichage_bpi_cercle(3)
+    tailles_voisinage = [3, 5, 7, 9, 11, 13, 15,17, 19]
+    rugosite.subplot_rugosite_ecart_type(tailles_voisinage)
+    rugosite.affichage_rugosite_vesteurs_normaux(11)
+    rugosite.affichage_rugosite_gaussienne(3,11)
