@@ -9,14 +9,36 @@ from Rugosite import *
 # crete = 2 = rouge
 #
 def b_bpi (BPI):
+    # BPI large
     broad_bpi = BPI.bpi_cercle(23)
-    masque_depression = broad_bpi <= -0.025
-    masque_crete = broad_bpi >= 0.025
+    broad_depression = broad_bpi <= -0.025
+    broad_crest = broad_bpi >= 0.025
+
+    #BPI fin
+    fine_bpi = BPI.bpi_cercle(5)
+    fine_depression = fine_bpi <= -0.25
+    fine_crest = fine_bpi >= 0.25
+
 
     carte_classes_bpi = np.full_like(broad_bpi,np.nan)
 
-    carte_classes_bpi[masque_depression] = 1
-    carte_classes_bpi[masque_crete] = 2
+    #classification des classes depression
+    #narrow depression 
+    carte_classes_bpi[broad_depression & fine_depression] = 1
+    #narrow crest
+    carte_classes_bpi[broad_crest & fine_crest] = 2
+    #local crest in depression
+    carte_classes_bpi[broad_depression & fine_crest] = 3
+    #broad depression with an open bottom
+
+    #classification des classes crest
+    #Depression on crest
+    carte_classes_bpi[broad_crest & fine_depression] = 4
+    #narrow crest
+    carte_classes_bpi[broad_crest & fine_crest] = 5
+
+
+
 
     plt.figure(figsize=(12, 5))
     plt.subplot(1,2,1)
@@ -25,7 +47,7 @@ def b_bpi (BPI):
     plt.colorbar(label='BPI')
 
     plt.subplot(1,2,2)
-    cm = plt.get_cmap('Accent', 2)
+    cm = plt.get_cmap('tab20', 5)
     plt.imshow(carte_classes_bpi, origin='lower', cmap=cm)
     plt.title('Masque dépression')
     plt.colorbar(label='Masque dépression')
