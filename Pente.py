@@ -18,25 +18,25 @@ class Pente():
 
     # -------------------------------------------------- CALCULS ------------------------------------------------------
     def TPP(self, mnt):
-        fx = convolve(mnt, np.array([[0, 0, 0], [0, -1, 1], [0, 0, 0]]) / self.pas, mode='constant', cval=np.nan)
-        fy = convolve(mnt, np.array([[0, 0, 0], [0, 1, 0], [0, -1, 0]]) / self.pas, mode='constant', cval=np.nan)
+        fx = convolve(mnt, np.array([[0, 0, 0], [0, -1, 1], [0, 0, 0]]) / self.pas, mode='nearest')
+        fy = convolve(mnt, np.array([[0, 0, 0], [0, 1, 0], [0, -1, 0]]) / self.pas, mode='nearest')
 
         return fx, fy
 
     def FCN(self, mnt):
-        fx = convolve(mnt, np.array([[0, 0, 0], [-1, 0, 1], [0, 0, 0]]) / (2*self.pas), mode='constant', cval=np.nan)
-        fy = convolve(mnt, np.array([[0, 1, 0], [0, 0, 0], [0, -1, 0]]) / (2*self.pas), mode='constant', cval=np.nan)
+        fx = convolve(mnt, np.array([[0, 0, 0], [-1, 0, 1], [0, 0, 0]]) / (2*self.pas), mode='nearest')
+        fy = convolve(mnt, np.array([[0, 1, 0], [0, 0, 0], [0, -1, 0]]) / (2*self.pas), mode='nearest')
 
         return fx, fy
 
     def Evans(self, mnt):
-        fx = convolve(mnt, np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]]) / (6*self.pas**2), mode='constant', cval=np.nan)
-        fy = convolve(mnt, np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]]) / (6*self.pas**2), mode='constant', cval=np.nan)
+        fx = convolve(mnt, np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]]) / (6*self.pas**2), mode='nearest')
+        fy = convolve(mnt, np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]]) / (6*self.pas**2), mode='nearest')
 
         return fx, fy
 
     def pente(self, fx, fy):
-        return np.degrees(np.arctan(np.sqrt(fx ** 2 + fy ** 2)))
+        return np.degrees(np.sqrt(fx ** 2 + fy ** 2))
 
     def deriv_terrain_theorique(self, name):
         x = np.arange(0, 101)
@@ -230,6 +230,10 @@ class Pente():
                                 cstride=1)
         m = cm.ScalarMappable(cmap=cmap, norm=norm_pente)
 
+        axe.set_xlabel("X [pixels]")
+        axe.set_ylabel("Y [pixels]")
+        axe.set_zlabel("Altitude [m]")
+
         plt.title(self.name)
         plt.colorbar(m, label='Pente[°]', ax=axe, shrink=.8)
         plt.tight_layout()
@@ -318,11 +322,6 @@ class Pente():
         plt.show()
 
     def affichage_comparaison_pente_reel(self):
-        """
-        Affiche les différences de pentes
-        :param sigma: bruit blanc (unsigned int)
-        :return:
-        """
         fx, fy = self.TPP(self.mnt)
         pente_tpp = self.pente(fx, fy)
         fx, fy = self.FCN(self.mnt)
@@ -350,28 +349,19 @@ class Pente():
 
         cmap = 'seismic'
 
-        # Normalisation partagée
-        fig, ax = plt.subplots(1, 3, figsize=(12, 5))
+        plt.imshow(erreur_tpp_fcn, origin='lower', cmap=cmap, norm=normalize3)
+        plt.title('TPP - FCN')
+        plt.colorbar(label='Erreur[°]')
+        plt.show()
 
-        im = ax[0].imshow(erreur_tpp_fcn, origin='lower', cmap=cmap, norm=normalize3)
-        ax[0].set_title('TPP - FCN')
-        divider = make_axes_locatable(ax[0])
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Erreur[°]', cax=cax)
+        plt.imshow(erreur_fcn_evans, origin='lower', cmap=cmap, norm=normalize3)
+        plt.title('FCN - Evans')
+        plt.colorbar(label='Erreur[°]')
+        plt.show()
 
-        im = ax[1].imshow(erreur_fcn_evans, origin='lower', cmap=cmap, norm=normalize3)
-        ax[1].set_title('FCN - Evans')
-        divider = make_axes_locatable(ax[1])
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Erreur[°]', cax=cax)
-
-        im = ax[2].imshow(erreur_evans_tpp, origin='lower', cmap=cmap, norm=normalize3)
-        ax[2].set_title('Evans - TPP')
-        divider = make_axes_locatable(ax[2])
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Erreur[°]', cax=cax)
-
-        plt.suptitle('Differences entre méthodes')
+        plt.imshow(erreur_evans_tpp, origin='lower', cmap=cmap, norm=normalize3)
+        plt.title('Evans - TPP')
+        plt.colorbar(label='Erreur[°]')
         plt.show()
 
         # Diagrammes croisés
@@ -382,6 +372,8 @@ class Pente():
         ax[0].set_title("Pente TPP vs FCN")
         ax[0].scatter(x, y, s=5, alpha=0.5, c='blue', edgecolors='none')
         ax[0].plot([x.min(), x.max()], [x.min(), x.max()], 'r--', label='y = x')  # ligne diagonale
+        ax[0].set_xlabel("Pente TPP [°]")
+        ax[0].set_ylabel("Pente FCN [°]")
         ax[0].legend()
 
         x, y = self.scatter_pente(pente_fcn, pente_evans)
@@ -389,6 +381,8 @@ class Pente():
         ax[1].set_title("Pente FCN vs Evans")
         ax[1].scatter(x, y, s=5, alpha=0.5, c='blue', edgecolors='none')
         ax[1].plot([x.min(), x.max()], [x.min(), x.max()], 'r--', label='y = x')  # ligne diagonale
+        ax[1].set_xlabel("Pente FCN [°]")
+        ax[1].set_ylabel("Pente Evans [°]")
         ax[1].legend()
 
         x, y = self.scatter_pente(pente_evans, pente_tpp)
@@ -396,6 +390,8 @@ class Pente():
         ax[2].set_title("Pente Evans vs TPP")
         ax[2].scatter(x, y, s=5, alpha=0.5, c='blue', edgecolors='none')
         ax[2].plot([x.min(), x.max()], [x.min(), x.max()], 'r--', label='y = x')  # ligne diagonale
+        ax[2].set_xlabel("Pente Evans [°]")
+        ax[2].set_ylabel("Pente TPP [°]")
         ax[2].legend()
 
         plt.suptitle('Ecarts entre méthodes')
@@ -425,12 +421,16 @@ class Pente():
         ax[0].plot(list_sigma, moy_FCN, label='FCN')
         ax[0].plot(list_sigma, moy_Evans, label='Evans')
         ax[0].set_title(f'Moyenne pour N = {N}, σ dans [{list_sigma[0]}, {list_sigma[-1]}]')
+        ax[0].set_xlabel("Écart-type du bruit σ")
+        ax[0].set_ylabel("Pente moyenne [°]")
         ax[0].legend()
 
         ax[1].plot(list_sigma, std_TPP, label='TPP')
         ax[1].plot(list_sigma, std_FCN, label='FCN')
         ax[1].plot(list_sigma, std_Evans, label='Evans')
         ax[1].set_title(f'Ecart-type pour N = {N}, σ dans [{list_sigma[0]}, {list_sigma[-1]}]')
+        ax[1].set_xlabel("Écart-type du bruit σ")
+        ax[1].set_ylabel("Écart-type de la pente [°]")
         ax[1].legend()
 
         plt.show()
@@ -446,7 +446,7 @@ class Pente():
             f'Evans : \n\t - moyenne : {moyenne_pente_Evans} \n\t - ecart type : {ecart_type_pente_Evans}')
 
     #Q6
-    def affichage_incertitude_monte_carlo(self, sigma, N):
+    def affichage_incertitude_monte_carlo_artificiel(self, sigma, N):
         moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans = self.calcul_incertitudes_modele_theorique(sigma, N)
 
         print(
@@ -455,3 +455,13 @@ class Pente():
             f'FCN (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_FCN} \n\t - ecart type : {ecart_type_pente_FCN}')
         print(
             f'Evans (N = {N}, σ = {sigma}) : \n\t - moyenne : {moyenne_pente_Evans} \n\t - ecart type : {ecart_type_pente_Evans}')
+
+    def affichage_incertitude_monte_carlo_reel(self, incert, N):
+        moyenne_pente_TPP, ecart_type_pente_TPP, moyenne_pente_FCN, ecart_type_pente_FCN, moyenne_pente_Evans, ecart_type_pente_Evans = self.calcul_incertitudes_terrain_reel(incert, N)
+
+        print(
+            f'TPP (N = {N}) : \n\t - moyenne : {moyenne_pente_TPP} \n\t - ecart type : {ecart_type_pente_TPP}')
+        print(
+            f'FCN (N = {N}) : \n\t - moyenne : {moyenne_pente_FCN} \n\t - ecart type : {ecart_type_pente_FCN}')
+        print(
+            f'Evans (N = {N}) : \n\t - moyenne : {moyenne_pente_Evans} \n\t - ecart type : {ecart_type_pente_Evans}')

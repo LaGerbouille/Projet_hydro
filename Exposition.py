@@ -230,6 +230,9 @@ class Exposition():
         surf = axe.plot_surface(X_MNT, Y_MNT, self.mnt, facecolors=my_col, linewidth=0, antialiased=False, rstride=1,
                                 cstride=1)
         m = cm.ScalarMappable(cmap=cmap, norm=norm_exposition)
+        axe.set_xlabel("X [pixels]")
+        axe.set_ylabel("Y [pixels]")
+        axe.set_zlabel("Altitude [m]")
 
         plt.title(self.name)
         plt.colorbar(m, label='exposition[°]', ax=axe, shrink=.8)
