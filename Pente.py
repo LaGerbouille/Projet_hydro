@@ -36,7 +36,7 @@ class Pente():
         return fx, fy
 
     def pente(self, fx, fy):
-        return np.degrees(np.sqrt(fx ** 2 + fy ** 2))
+        return np.degrees(np.sqrt(fx ** 2 + fy ** 2)) # modification
 
     def deriv_terrain_theorique(self, name):
         x = np.arange(0, 101)
