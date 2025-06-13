@@ -1,92 +1,85 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.ndimage import convolve
-from BPI import*
+from matplotlib.colors import ListedColormap
+from BPI import *
 from Pente import *
 from Rugosite import *
 
 
-# depression = 1 = bleu
-# crete = 2 = rouge
-#
-def b_bpi (BPI,PENTE):
-    # BPI large
+def b_bpi(BPI, PENTE, RUGOSITE, mnt):
+    # === Étape 1 : Calculs des grilles ===
     broad_bpi = BPI.bpi_cercle(15)
-    #plot du BPI large
-    plt.figure(figsize=(12, 5))
-    plt.subplot(1, 4, 1)
-    plt.imshow(broad_bpi, origin='lower', cmap='bwr',norm=CenteredNorm(0,halfrange=0.1))
-    plt.title('BPI large')
-    plt.colorbar(label='BPI')
-    
-    #filtre pour le BPI
+    fine_bpi = BPI.bpi_cercle(5)
+    fx, fy = PENTE.Evans(mnt)
+    pente = PENTE.pente(fx, fy)
+    rugosite = RUGOSITE.rugosite_ecart_type_analytique(13)
+
+    # === Étape 2 : Création des masques ===
     broad_depression = broad_bpi <= -0.075
     broad_crest = broad_bpi >= 0.075
     broad_flat = (broad_bpi > -0.075) & (broad_bpi < 0.075)
-    #BPI fin
-    fine_bpi = BPI.bpi_cercle(5)
+
     fine_depression = fine_bpi <= -0.075
     fine_crest = fine_bpi >= 0.075
 
-    #filtre pour les pentes
-    fx,fy = PENTE.Evans(mnt)
-    pente = PENTE.pente(fx,fy)
-    plt.figure
-    plt.subplot(1,4,3)
-    plt.imshow(pente, origin='lower', cmap='bwr')
-    plt.title('Pente')
-    plt.colorbar(label='Pente (degrés)')
+    slope = pente >= 20
+    roughness = rugosite >= 1.75
 
-    
+    # === Étape 3 : Carte des classes ===
+    carte_classes = np.full_like(broad_bpi, np.nan)
 
+    carte_classes[broad_depression & ~fine_crest] = 1  # Narrow depression
+    carte_classes[broad_depression & fine_crest] = 2   # Local crest in depression
+    carte_classes[broad_crest & fine_depression] = 3   # Depression on crest
+    carte_classes[broad_crest & ~fine_depression] = 4  # Narrow crest
+    carte_classes[slope & broad_flat] = 5              # Slope
+    carte_classes[~slope & broad_flat & roughness] = 6  # Flat with roughness
+    carte_classes[~slope & broad_flat & ~roughness] = 7 # Flat without roughness
 
+    # === Étape 4 : Affichage ===
+    noms_classes = {
+        1: "Narrow depression",
+        2: "Local crest in depression",
+        3: "Depression on crest",
+        4: "Narrow crest",
+        5: "Slope",
+        6: "Flat (rough)",
+        7: "Flat (smooth)"
+    }
 
-    carte_classes_bpi = np.full_like(broad_bpi,np.nan)
+    # Couleurs personnalisées
+    couleurs = ['#1f78b4', '#33a02c', '#e31a1c', '#ff7f00', '#6a3d9a', '#b15928', '#a6cee3']
+    cmap = ListedColormap(couleurs[:len(noms_classes)])
 
-    # carte_classes_bpi = BPI.bpi_cercle(23)
+    unique_classes = sorted(int(k) for k in np.unique(carte_classes[~np.isnan(carte_classes)]))
+    ticks = list(range(1, len(unique_classes)+1))
+    labels = [noms_classes[k] for k in unique_classes]
 
-    carte_classes_bpi [broad_flat] = 0  # flat areas
-    #classification des classes depression
-    
-    #narrow depression 
-    carte_classes_bpi[(broad_depression) & (~fine_crest)] = 1
+    fig, axs = plt.subplots(1, 3, figsize=(18, 6))
 
-    #local crest in depression
-    carte_classes_bpi[(broad_depression) & (fine_crest)] = 2
+    # === BPI large ===
+    im0 = axs[0].imshow(broad_bpi, origin='lower', cmap='bwr', vmin=-0.1, vmax=0.1)
+    axs[0].set_title('BPI large')
+    plt.colorbar(im0, ax=axs[0], label='BPI')
 
-    #broad depression with an open bottom
+    # === Carte des classes ===
+    im1 = axs[1].imshow(carte_classes, origin='lower', cmap=cmap, vmin=0.5, vmax=7.5)
+    axs[1].set_title('Classification bathymétrique')
+    cbar = plt.colorbar(im1, ax=axs[1], ticks=ticks)
+    cbar.ax.set_yticklabels(labels)
 
-    #classification des classes crest
-    #Depression on crest
-    carte_classes_bpi[(broad_crest) & (fine_depression)] = 3
-    #narrow crest 
-    carte_classes_bpi[(broad_crest) & (~fine_depression)] = 4
+    # === MNT terrain ===
+    im2 = axs[2].imshow(mnt, origin='lower', cmap='terrain')
+    axs[2].set_title('Terrain (MNT)')
+    plt.colorbar(im2, ax=axs[2], label='Élévation (m)')
 
-    #j'ai donc fait les premières branches  de classification
-    #maitenant il faut faire d'autres classes pour affiner la classification
+    for ax in axs:
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
 
-    noms_bpi = ['flat surface','narrow depression', 'local crest in depression','Derpression on crest', 'narrow crest']
-    vmin = int(np.nanmin(carte_classes_bpi))
-    vmax = int(np.nanmax(carte_classes_bpi))
-    N = vmax - vmin + 1
-    print(N)
-    plt.subplot(1, 4, 2)
-
-    cm = plt.get_cmap('Accent', N)
-    plt.imshow(carte_classes_bpi, origin='lower', cmap=cm, vmin=vmin-.5,vmax=vmax+.5)
-    cbar = plt.colorbar(ticks=range(vmin,vmax+1))
-    cbar.ax.set_yticklabels(noms_bpi)
-    plt.title('Segmentation')
     plt.tight_layout()
-
-    #plot du terrain réel 
-    plt.subplot(1,4,4)
-    plt.imshow(mnt, origin='lower', cmap='terrain')
-    plt.colorbar(label='Elevation (m)')
-    plt.title('Terrain Elevation')
-    plt.xlabel('X Coordinate')
-    plt.ylabel('Y Coordinate')
     plt.show()
+
 
 if __name__ == '__main__':
     fichier = "lezardrieux_z.txt"
@@ -98,4 +91,4 @@ if __name__ == '__main__':
     pente = Pente(mnt, pas, name)
     rugosite = Rugosite(mnt, pas, name)
 
-    b_bpi(bpi,pente)
+    b_bpi(bpi,pente,rugosite,mnt)
