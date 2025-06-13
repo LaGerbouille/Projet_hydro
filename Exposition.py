@@ -202,6 +202,7 @@ class Exposition():
         plt.tight_layout()
         plt.show()
 
+    # Q3
     def affichage_3D(self):
         cmap = cmocean.cm.tarn
 
