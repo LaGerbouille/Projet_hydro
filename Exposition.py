@@ -151,6 +151,7 @@ class Exposition():
         return x, y
 
     # ---------------------------------------------------- AFFICHAGE --------------------------------------------------
+    # Q2
     def affichage_exposition(self):
         fx, fy = self.TPP(self.mnt)
         exposition_tpp = self.exposition(fx, fy)

@@ -166,40 +166,39 @@ class Pente():
 
         print("Différence pente méthodes Moindres carrés - Evans. Grille 3 x 3 : \n", diff)
 
-        cmap = 'cividis_r'
+        cmap = 'cubehelix_r'
 
-        fig, ax = plt.subplots(1, 4, figsize=(12, 5))
+        plt.imshow(pente_tpp, origin='lower', cmap=cmap)
+        plt.title('TPP')
+        plt.colorbar(label='Pente[°]')
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.suptitle(self.name)
+        plt.show()
 
-        im = ax[0].imshow(pente_tpp, origin='lower', cmap=cmap)
-        ax[0].set_title('TPP')
-        divider = make_axes_locatable(ax[0])
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Pente[°]', cax=cax)
+        plt.imshow(pente_fcn, origin='lower', cmap=cmap)
+        plt.title('FCN')
+        plt.colorbar(label='Pente[°]')
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.suptitle(self.name)
+        plt.show()
 
-        im = ax[1].imshow(pente_fcn, origin='lower', cmap=cmap)
-        ax[1].set_title('FCN')
-        divider = make_axes_locatable(ax[1])
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Pente[°]', cax=cax)
+        plt.imshow(pente_evans, origin='lower', cmap=cmap)
+        plt.title('Evans')
+        plt.colorbar(label='Pente[°]')
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.suptitle(self.name)
+        plt.show()
 
-        im = ax[2].imshow(pente_evans, origin='lower', cmap=cmap)
-        ax[2].set_title('Evans')
-        divider = make_axes_locatable(ax[2])
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Pente[°]', cax=cax)
-
-        im = ax[3].imshow(pente_moindres_carres, origin='lower', cmap=cmap)
-        ax[3].set_title('Moindres carres')
-        divider = make_axes_locatable(ax[3])
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, label='Pente[°]', cax=cax)
-
-        for a in ax:
-            a.set_xlabel("X")
-            a.set_ylabel("Y")
+        plt.imshow(pente_moindres_carres, origin='lower', cmap=cmap)
+        plt.title('Moindres Carrés')
+        plt.colorbar(label='Pente[°]')
+        plt.xlabel('X')
+        plt.ylabel('Y')
 
         plt.suptitle(self.name)
-        plt.tight_layout()
         plt.show()
 
     #Q3
